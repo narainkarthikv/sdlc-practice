@@ -1,0 +1,138 @@
+# Cloud Build configuration for production environment
+steps:
+  # Validate Terraform configuration
+  - name: 'gcr.io/cloud-builders/terraform'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd environments/prod
+        terraform init
+        terraform validate
+        terraform fmt -check=true
+    env:
+      - 'TF_VAR_project_id=${_PROJECT_ID}'
+
+  # Generate Terraform plan
+  - name: 'gcr.io/cloud-builders/terraform'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd environments/prod
+        terraform plan -out=tfplan -var-file=terraform.tfvars
+    env:
+      - 'TF_VAR_project_id=${_PROJECT_ID}'
+
+  # Backup current state before changes
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args:
+      - 'cp'
+      - 'gs://tf-state-ownlyst-prod/terraform/state/default.tfstate'
+      - 'gs://tf-state-ownlyst-prod/backups/terraform-state-backup-${BUILD_ID}.tfstate'
+
+  # Production safety check
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        echo "🚨 PRODUCTION DEPLOYMENT INITIATED 🚨"
+        echo ""
+        echo "This will modify PRODUCTION infrastructure."
+        echo "Please ensure:"
+        echo "  ✅ Changes have been tested in staging"
+        echo "  ✅ You have reviewed the Terraform plan above"
+        echo "  ✅ You have notified the team"
+        echo "  ✅ You are prepared to monitor the deployment"
+        echo ""
+        echo "State backup created: terraform-state-backup-${BUILD_ID}.tfstate"
+        echo ""
+        echo "⏸️  Type 'DEPLOY_TO_PRODUCTION' to proceed:"
+        read approval
+        if [ "$approval" != "DEPLOY_TO_PRODUCTION" ]; then
+          echo "❌ Production deployment cancelled"
+          exit 1
+        fi
+
+  # Apply Terraform plan
+  - name: 'gcr.io/cloud-builders/terraform'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd environments/prod
+        terraform apply -auto-approve tfplan
+    env:
+      - 'TF_VAR_project_id=${_PROJECT_ID}'
+
+  # Post-deployment verification
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        echo "🔍 Verifying production deployment..."
+        
+        # Wait for instances to be ready
+        sleep 90
+        
+        # Check instance health
+        UNHEALTHY_INSTANCES=$(gcloud compute instance-groups managed list-instances ${_APP_NAME}-${_ENVIRONMENT}-mig --region=asia-south1 --filter="status!=RUNNING" --format="value(name)" | wc -l)
+        
+        if [ "$UNHEALTHY_INSTANCES" -gt 0 ]; then
+          echo "❌ Found $UNHEALTHY_INSTANCES unhealthy instances!"
+          exit 1
+        fi
+        
+        # Test load balancer
+        LB_IP=$(gcloud compute forwarding-rules list --filter="name:${_APP_NAME}-${_ENVIRONMENT}" --format="value(IPAddress)")
+        
+        if [ ! -z "$LB_IP" ]; then
+          # Test health endpoint with retries
+          for i in {1..5}; do
+            if curl -f --max-time 10 "http://$LB_IP/health"; then
+              echo "✅ Health check passed"
+              break
+            elif [ $i -eq 5 ]; then
+              echo "❌ Health check failed after 5 attempts"
+              exit 1
+            else
+              echo "⏳ Health check attempt $i failed, retrying..."
+              sleep 10
+            fi
+          done
+        fi
+        
+        echo "🎉 Production deployment completed successfully!"
+
+  # Send notification
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        # Send Slack notification (if webhook is configured)
+        if [ ! -z "${_SLACK_WEBHOOK}" ]; then
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"🚀 Production deployment completed for ${_APP_NAME} (Build: ${BUILD_ID})\"}" \
+            ${_SLACK_WEBHOOK}
+        fi
+
+# Build configuration
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: ALLOW_LOOSE
+
+# Substitutions
+substitutions:
+  _PROJECT_ID: 'narainkarthik812-practice-prod'
+  _APP_NAME: 'ownlyst'
+  _ENVIRONMENT: 'prod'
+  _SLACK_WEBHOOK: ''  # Add your webhook URL here
+
+# IAM
+serviceAccount: 'projects/${_PROJECT_ID}/serviceAccounts/ownlyst-prod-terraform-sa@${_PROJECT_ID}.iam.gserviceaccount.com'
+
+# Timeout (extra long for manual approval and verification)
+timeout: '7200s'

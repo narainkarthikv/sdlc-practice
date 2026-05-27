@@ -1,0 +1,95 @@
+# Cloud Build configuration for staging environment
+steps:
+  # Validate Terraform configuration
+  - name: 'gcr.io/cloud-builders/terraform'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd environments/staging
+        terraform init
+        terraform validate
+        terraform fmt -check=true
+    env:
+      - 'TF_VAR_project_id=${_PROJECT_ID}'
+
+  # Generate Terraform plan
+  - name: 'gcr.io/cloud-builders/terraform'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd environments/staging
+        terraform plan -out=tfplan -var-file=terraform.tfvars
+    env:
+      - 'TF_VAR_project_id=${_PROJECT_ID}'
+
+  # Manual approval step for staging
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        echo "⏸️  Staging deployment plan generated."
+        echo "📋 Please review the plan above before proceeding."
+        echo "✅ Type 'APPROVE' to continue with deployment:"
+        read approval
+        if [ "$approval" != "APPROVE" ]; then
+          echo "❌ Deployment cancelled"
+          exit 1
+        fi
+
+  # Apply Terraform plan
+  - name: 'gcr.io/cloud-builders/terraform'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd environments/staging
+        terraform apply -auto-approve tfplan
+    env:
+      - 'TF_VAR_project_id=${_PROJECT_ID}'
+
+  # Run comprehensive tests
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        # Wait for instances to be ready
+        sleep 60
+        
+        # Test all endpoints
+        echo "🧪 Running staging tests..."
+        
+        # Get load balancer IP
+        LB_IP=$(gcloud compute forwarding-rules list --filter="name:${_APP_NAME}-${_ENVIRONMENT}" --format="value(IPAddress)")
+        
+        if [ ! -z "$LB_IP" ]; then
+          # Test health endpoint
+          curl -f "http://$LB_IP/health" || exit 1
+          
+          # Test main application
+          curl -f "http://$LB_IP/" || exit 1
+          
+          echo "✅ All staging tests passed!"
+        else
+          echo "⚠️  Load balancer not found, skipping endpoint tests"
+        fi
+
+# Build configuration
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: ALLOW_LOOSE
+
+# Substitutions
+substitutions:
+  _PROJECT_ID: 'narainkarthik812-practice-staging'
+  _APP_NAME: 'ownlyst'
+  _ENVIRONMENT: 'staging'
+
+# IAM
+serviceAccount: 'projects/${_PROJECT_ID}/serviceAccounts/ownlyst-staging-terraform-sa@${_PROJECT_ID}.iam.gserviceaccount.com'
+
+# Timeout (longer for manual approval)
+timeout: '3600s'

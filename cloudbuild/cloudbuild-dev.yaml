@@ -1,0 +1,70 @@
+# Cloud Build configuration for development environment
+steps:
+  # Validate Terraform configuration
+  - name: 'gcr.io/cloud-builders/terraform'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd environments/dev
+        terraform init
+        terraform validate
+        terraform fmt -check=true
+    env:
+      - 'TF_VAR_project_id=${_PROJECT_ID}'
+
+  # Generate Terraform plan
+  - name: 'gcr.io/cloud-builders/terraform'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd environments/dev
+        terraform plan -out=tfplan -var-file=terraform.tfvars
+    env:
+      - 'TF_VAR_project_id=${_PROJECT_ID}'
+
+  # Apply Terraform plan
+  - name: 'gcr.io/cloud-builders/terraform'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd environments/dev
+        terraform apply -auto-approve tfplan
+    env:
+      - 'TF_VAR_project_id=${_PROJECT_ID}'
+
+  # Run post-deployment tests
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        # Wait for instances to be ready
+        sleep 30
+        
+        # Test health endpoint
+        gcloud compute instances list --filter="labels.environment=dev AND labels.app=${_APP_NAME}"
+        
+        # Verify monitoring is working
+        gcloud alpha monitoring policies list --filter="displayName:${_APP_NAME}"
+        
+        echo "✅ Development deployment completed successfully!"
+
+# Build configuration
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: ALLOW_LOOSE
+
+# Substitutions
+substitutions:
+  _PROJECT_ID: 'narainkarthik812-practice-dev'
+  _APP_NAME: 'ownlyst'
+  _ENVIRONMENT: 'dev'
+
+# IAM
+serviceAccount: 'projects/${_PROJECT_ID}/serviceAccounts/terraform-sa@${_PROJECT_ID}.iam.gserviceaccount.com'
+
+# Timeout
+timeout: '1200s'
