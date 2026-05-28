@@ -1,6 +1,6 @@
 terraform {
   required_version = ">= 1.5"
-  
+
   required_providers {
     google = {
       source  = "hashicorp/google"
@@ -13,8 +13,8 @@ terraform {
   }
 
   backend "gcs" {
-    bucket  = "ownlyst-tf-state-dev"
-    prefix  = "terraform/state"
+    bucket = "ownlyst-tf-state-dev"
+    prefix = "terraform/state"
   }
 }
 

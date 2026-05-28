@@ -13,7 +13,7 @@ terraform {
   }
 
   backend "gcs" {
-    bucket  = "ownlyst-tf-state-prod"
+    bucket  = "ownlyst-tf-state-staging"
     prefix  = "terraform/state"
   }
 }

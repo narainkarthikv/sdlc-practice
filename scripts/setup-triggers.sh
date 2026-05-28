@@ -14,7 +14,7 @@ echo "🔧 Setting up Cloud Build triggers..."
 gcloud beta builds triggers create github \
   --repo-name="$REPO_NAME" \
   --repo-owner="$REPO_OWNER" \
-  --branch-pattern="^feature/.*|^dev$" \
+  --branch-pattern="^develop$" \
   --build-config="cloudbuild/cloudbuild-dev.yaml" \
   --description="Deploy to development environment" \
   --name="${APP_NAME}-dev-trigger"
