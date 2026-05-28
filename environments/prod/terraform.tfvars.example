@@ -1,0 +1,40 @@
+# Project configuration
+project_id  = "narainkarthik812-practice-prod"
+region      = "asia-south1"
+zone        = "asia-south1-a"
+environment = "prod"
+app_name    = "ownlyst"
+
+# Compute configuration (production-grade)
+instance_type = "e2-micro"
+min_replicas  = 1
+max_replicas  = 2
+
+# Monitoring configuration
+enable_monitoring = true
+
+# Backup configuration (long retention)
+backup_retention_days = 30
+
+# Security configuration (most restrictive)
+allowed_ip_ranges = [
+  "10.0.0.0/8",    # Internal network
+  "192.168.1.0/24" # Office network
+]
+
+# Security configuration for production
+create_service_account_keys = false  # Never use keys in production
+enable_workload_identity    = true
+kubernetes_namespace        = "production"
+custom_permissions = [
+  "storage.objects.get",      # Read-only access to storage
+  "cloudsql.instances.connect"
+]
+
+# Cross-project access for shared resources
+cross_project_roles = {
+  "shared-logging" = {
+    project_id = "my-company-shared-logging"
+    role       = "roles/logging.logWriter"
+  }
+}

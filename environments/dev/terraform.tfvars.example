@@ -1,0 +1,32 @@
+# Project configuration
+project_id  = "narainkarthik812-practice-dev"
+region      = "asia-south1"
+zone        = "asia-south1-a"
+environment = "dev"
+app_name    = "ownlyst"
+
+# Compute configuration
+instance_type = "e2-micro"
+min_replicas  = 1
+max_replicas  = 2
+
+# Monitoring configuration
+enable_monitoring = true
+
+# Backup configuration
+backup_retention_days = 7
+
+# Security configuration
+allowed_ip_ranges = [
+  "10.0.0.0/8",    # Internal network
+  "192.168.1.0/24" # Office network
+]
+
+# Security configuration for development
+create_service_account_keys = true # OK for dev/testing
+enable_workload_identity    = false
+custom_permissions = [
+  "storage.buckets.list",
+  "storage.objects.get",
+  "storage.objects.create"
+]

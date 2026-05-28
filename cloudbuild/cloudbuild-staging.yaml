@@ -7,6 +7,11 @@ steps:
       - '-c'
       - |
         cd environments/staging
+        # Copy terraform.tfvars.example if terraform.tfvars doesn't exist
+        if [ ! -f terraform.tfvars ]; then
+          echo "📋 Using terraform.tfvars.example as terraform.tfvars"
+          cp terraform.tfvars.example terraform.tfvars
+        fi
         terraform init
         terraform validate
         terraform fmt -check=true
