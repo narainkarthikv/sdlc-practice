@@ -1,7 +1,7 @@
 # Cloud Build configuration for development environment
 steps:
   # Validate Terraform configuration
-  - name: 'gcr.io/cloud-builders/terraform'
+  - name: 'hashicorp/terraform:1.5'
     entrypoint: 'sh'
     args:
       - '-c'
@@ -14,7 +14,7 @@ steps:
       - 'TF_VAR_project_id=${_PROJECT_ID}'
 
   # Generate Terraform plan
-  - name: 'gcr.io/cloud-builders/terraform'
+  - name: 'hashicorp/terraform:1.5'
     entrypoint: 'sh'
     args:
       - '-c'
@@ -25,7 +25,7 @@ steps:
       - 'TF_VAR_project_id=${_PROJECT_ID}'
 
   # Apply Terraform plan
-  - name: 'gcr.io/cloud-builders/terraform'
+  - name: 'hashicorp/terraform:1.5'
     entrypoint: 'sh'
     args:
       - '-c'
@@ -41,14 +41,18 @@ steps:
     args:
       - '-c'
       - |
+        set -e  # Exit on error
+        
         # Wait for instances to be ready
         sleep 30
         
-        # Test health endpoint
-        gcloud compute instances list --filter="labels.environment=dev AND labels.app=${_APP_NAME}"
+        # Test instances
+        echo "🔍 Checking development instances..."
+        gcloud compute instances list --filter="labels.environment=dev AND labels.app=${_APP_NAME}" --format="table(name,status,INTERNAL_IP)" || true
         
         # Verify monitoring is working
-        gcloud alpha monitoring policies list --filter="displayName:${_APP_NAME}"
+        echo "📊 Checking monitoring policies..."
+        gcloud alpha monitoring policies list --filter="displayName:${_APP_NAME}" --format="table(displayName)" || echo "⚠️  No monitoring policies found"
         
         echo "✅ Development deployment completed successfully!"
 
