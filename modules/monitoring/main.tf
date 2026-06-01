@@ -24,7 +24,7 @@ resource "google_monitoring_alert_policy" "high_cpu" {
     condition_threshold {
       filter          = "resource.type=\"gce_instance\" AND resource.labels.project_id=\"${var.project_id}\""
       duration        = "300s"
-      comparison      = "COMPARISON_GREATER_THAN"
+      comparison      = "COMPARISON_GT"
       threshold_value = var.cpu_alert_threshold
       
       aggregations {
@@ -52,7 +52,7 @@ resource "google_monitoring_alert_policy" "high_disk_usage" {
     condition_threshold {
       filter          = "resource.type=\"gce_instance\" AND resource.labels.project_id=\"${var.project_id}\""
       duration        = "300s"
-      comparison      = "COMPARISON_GREATER_THAN"
+      comparison      = "COMPARISON_GT"
       threshold_value = var.disk_alert_threshold
       
       aggregations {
@@ -78,7 +78,7 @@ resource "google_monitoring_alert_policy" "instance_down" {
     condition_threshold {
       filter          = "resource.type=\"gce_instance\" AND resource.labels.project_id=\"${var.project_id}\""
       duration        = "60s"
-      comparison      = "COMPARISON_LESS_THAN"
+      comparison      = "COMPARISON_LT"
       threshold_value = 1
       
       aggregations {
@@ -170,6 +170,7 @@ resource "google_monitoring_dashboard" "main" {
 
 # Log-based metric for application errors
 resource "google_logging_metric" "app_errors" {
+  count  = var.error_log_filter != null ? 1 : 0
   name   = "${var.app_name}_${var.environment}_errors"
   filter = var.error_log_filter
   
@@ -193,9 +194,9 @@ resource "google_monitoring_alert_policy" "app_errors" {
     display_name = "High application error rate"
     
     condition_threshold {
-      filter          = "resource.type=\"global\" AND metric.type=\"logging.googleapis.com/user/${google_logging_metric.app_errors.name}\""
+      filter          = "resource.type=\"global\" AND metric.type=\"logging.googleapis.com/user/${google_logging_metric.app_errors[0].name}\""
       duration        = "300s"
-      comparison      = "COMPARISON_GREATER_THAN"
+      comparison      = "COMPARISON_GT"
       threshold_value = var.error_rate_threshold
       
       aggregations {

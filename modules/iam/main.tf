@@ -99,7 +99,7 @@ resource "google_secret_manager_secret" "app_instance_key" {
   secret_id = "${var.app_name}-${var.environment}-app-sa-key"
   
   replication {
-    automatic = true
+    auto {}
   }
   
   labels = {

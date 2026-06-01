@@ -1,9 +1,6 @@
 output "notification_channel_ids" {
   description = "List of notification channel IDs"
-  value = concat(
-    google_monitoring_notification_channel.email.*.id,
-    google_monitoring_notification_channel.slack.*.id
-  )
+  value = google_monitoring_notification_channel.email.*.id
 }
 
 output "dashboard_url" {
@@ -15,7 +12,6 @@ output "alert_policy_ids" {
   description = "List of alert policy IDs"
   value = [
     google_monitoring_alert_policy.high_cpu.id,
-    google_monitoring_alert_policy.high_memory.id,
     google_monitoring_alert_policy.high_disk_usage.id,
     google_monitoring_alert_policy.instance_down.id
   ]

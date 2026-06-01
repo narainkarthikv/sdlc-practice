@@ -64,3 +64,21 @@ variable "allowed_ip_ranges" {
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
+
+variable "create_service_account_keys" {
+  description = "Create service account keys (not recommended for production)"
+  type        = bool
+  default     = false
+}
+
+variable "enable_workload_identity" {
+  description = "Enable Workload Identity for service accounts"
+  type        = bool
+  default     = false
+}
+
+variable "custom_permissions" {
+  description = "Custom IAM permissions for service accounts"
+  type        = list(string)
+  default     = []
+}
