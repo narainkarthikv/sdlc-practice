@@ -162,3 +162,45 @@ variable "cloudsql_authorized_networks" {
     }
   ]
 }
+
+variable "enable_todo_prototype" {
+  description = "Enable the todo list prototype stack in dev"
+  type        = bool
+  default     = true
+}
+
+variable "todo_cloudsql_instance_name" {
+  description = "Existing Cloud SQL instance name used by the todo backend"
+  type        = string
+  default     = "narainkarthik812-practice-dev-postgres"
+}
+
+variable "todo_db_name" {
+  description = "Database name for the todo prototype"
+  type        = string
+  default     = "todolist"
+}
+
+variable "todo_db_user" {
+  description = "Database user for the todo prototype"
+  type        = string
+  default     = "todo_app"
+}
+
+variable "todo_backend_source_dir" {
+  description = "Path to the todo backend function source"
+  type        = string
+  default     = "../../../todolist-app/backend"
+}
+
+variable "todo_frontend_source_dir" {
+  description = "Path to the todo frontend function source"
+  type        = string
+  default     = "../../../todolist-app/frontend"
+}
+
+variable "todo_vpc_connector_cidr" {
+  description = "CIDR block reserved for the serverless VPC connector"
+  type        = string
+  default     = "10.8.0.0/28"
+}
