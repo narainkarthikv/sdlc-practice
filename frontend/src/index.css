@@ -5,11 +5,29 @@
 :root {
   color-scheme: dark;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark Mode (default) */
+body.dark,
+body:not(.light) {
   background:
     radial-gradient(circle at top left, rgba(24, 78, 119, 0.45), transparent 28%),
     radial-gradient(circle at top right, rgba(15, 23, 42, 0.7), transparent 24%),
     linear-gradient(180deg, #07111f 0%, #0b1220 42%, #050816 100%);
   color: #e5eefc;
+}
+
+/* Light Mode */
+body.light {
+  background:
+    radial-gradient(circle at top left, rgba(191, 219, 254, 0.4), transparent 28%),
+    radial-gradient(circle at top right, rgba(243, 244, 246, 0.8), transparent 24%),
+    linear-gradient(180deg, #f9fafb 0%, #f3f4f6 42%, #fffbeb 100%);
+  color: #1f2937;
 }
 
 html,
@@ -25,5 +43,10 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+/* Smooth transitions for theme changes */
+.theme-transition {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 

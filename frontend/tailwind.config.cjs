@@ -1,5 +1,8 @@
+const plugin = require("tailwindcss/plugin");
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: ["class", ".dark"],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -13,6 +16,9 @@ module.exports = {
       }
     }
   },
-  plugins: []
+  plugins: [
+    plugin(({ addVariant }) => {
+      addVariant("light", "body.light &");
+    })
+  ]
 };
-
