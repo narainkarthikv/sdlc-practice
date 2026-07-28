@@ -3,6 +3,7 @@
 *.tfstate.*
 *.tfplan
 *.tfplan.*
+tfplan
 .terraform/
 .terraform.lock.hcl
 crash.log
@@ -70,6 +71,7 @@ yarn-error.log
 dist/
 out/
 .next/
+*.tsbuildinfo
 
 # Vite cache (frontend/)
 .vite/

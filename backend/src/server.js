@@ -4,7 +4,9 @@ import cors from "cors";
 import { randomUUID } from "node:crypto";
 import { ZodError } from "zod";
 import { closeDb, ensureDbConnection } from "./db.js";
+import { requireUser } from "./auth/requireUser.js";
 import { initializeDatabase } from "./init-db.js";
+import { loginUser, signupUser } from "./auth/users.js";
 import { createTask, deleteTask, getTask, listTasks, taskStats, updateTask } from "./tasks.js";
 
 const app = express();
@@ -45,17 +47,52 @@ app.get("/healthz", (_req, res) => {
   res.json({ ok: true });
 });
 
-app.get("/tasks", async (_req, res, next) => {
+function formatErrorMessage(error) {
+  if (error instanceof ZodError) {
+    const firstIssue = error.issues[0];
+    if (
+      firstIssue?.code === "invalid_type" &&
+      firstIssue.path.length === 0 &&
+      firstIssue.received === "undefined"
+    ) {
+      return "Request body is required";
+    }
+
+    return firstIssue?.message || "Invalid request payload";
+  }
+
+  return error instanceof Error ? error.message : "Internal server error";
+}
+
+app.post("/auth/signup", async (req, res, next) => {
   try {
-    res.json(await listTasks());
+    res.status(201).json(await signupUser(req.body));
   } catch (error) {
     next(error);
   }
 });
 
-app.get("/tasks/stats", async (_req, res, next) => {
+app.post("/auth/login", async (req, res, next) => {
   try {
-    res.json(await taskStats());
+    res.json(await loginUser(req.body));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/tasks", async (req, res, next) => {
+  try {
+    const user = await requireUser(req);
+    res.json(await listTasks(user.id));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/tasks/stats", async (req, res, next) => {
+  try {
+    const user = await requireUser(req);
+    res.json(await taskStats(user.id));
   } catch (error) {
     next(error);
   }
@@ -63,7 +100,8 @@ app.get("/tasks/stats", async (_req, res, next) => {
 
 app.get("/tasks/:id", async (req, res, next) => {
   try {
-    const task = await getTask(req.params.id);
+    const user = await requireUser(req);
+    const task = await getTask(user.id, req.params.id);
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
@@ -75,7 +113,8 @@ app.get("/tasks/:id", async (req, res, next) => {
 
 app.post("/tasks", async (req, res, next) => {
   try {
-    const task = await createTask(req.body);
+    const user = await requireUser(req);
+    const task = await createTask(user.id, req.body);
     res.status(201).json(task);
   } catch (error) {
     next(error);
@@ -84,7 +123,8 @@ app.post("/tasks", async (req, res, next) => {
 
 app.patch("/tasks/:id", async (req, res, next) => {
   try {
-    const task = await updateTask(req.params.id, req.body);
+    const user = await requireUser(req);
+    const task = await updateTask(user.id, req.params.id, req.body);
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
@@ -96,7 +136,8 @@ app.patch("/tasks/:id", async (req, res, next) => {
 
 app.delete("/tasks/:id", async (req, res, next) => {
   try {
-    const deleted = await deleteTask(req.params.id);
+    const user = await requireUser(req);
+    const deleted = await deleteTask(user.id, req.params.id);
     if (!deleted) {
       return res.status(404).json({ message: "Task not found" });
     }
@@ -107,8 +148,13 @@ app.delete("/tasks/:id", async (req, res, next) => {
 });
 
 app.use((error, _req, res, _next) => {
-  const message = error instanceof Error ? error.message : "Internal server error";
-  const status = error instanceof ZodError ? 400 : 500;
+  const message = formatErrorMessage(error);
+  const status =
+    error instanceof ZodError
+      ? 400
+      : typeof error?.statusCode === "number"
+        ? error.statusCode
+        : 500;
   res.status(status).json({ message });
 });
 

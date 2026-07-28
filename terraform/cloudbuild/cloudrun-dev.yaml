@@ -1,0 +1,113 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_BACKEND_IMAGE}:${BUILD_ID}
+      - -f
+      - backend/Dockerfile
+      - backend
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_BACKEND_IMAGE}:${BUILD_ID}
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_AGENTS_IMAGE}:${BUILD_ID}
+      - -f
+      - agents/Dockerfile
+      - agents
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_AGENTS_IMAGE}:${BUILD_ID}
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_IMAGE}:${BUILD_ID}
+      - -f
+      - frontend/Dockerfile
+      - frontend
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_IMAGE}:${BUILD_ID}
+
+  - name: gcr.io/cloud-builders/gcloud
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -eu
+        gcloud run deploy "${_BACKEND_SERVICE}" \
+          --image "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_BACKEND_IMAGE}:${BUILD_ID}" \
+          --region "${_REGION}" \
+          --platform managed \
+          --allow-unauthenticated \
+          --port 8080
+
+  - name: gcr.io/cloud-builders/gcloud
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -eu
+        gcloud run deploy "${_AGENTS_SERVICE}" \
+          --image "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_AGENTS_IMAGE}:${BUILD_ID}" \
+          --region "${_REGION}" \
+          --platform managed \
+          --allow-unauthenticated \
+          --port 9000
+
+  - name: gcr.io/cloud-builders/gcloud
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -eu
+        BACKEND_URL="$(gcloud run services describe "${_BACKEND_SERVICE}" --region "${_REGION}" --format='value(status.url)')"
+        AGENTS_URL="$(gcloud run services describe "${_AGENTS_SERVICE}" --region "${_REGION}" --format='value(status.url)')"
+
+        gcloud run deploy "${_FRONTEND_SERVICE}" \
+          --image "${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_IMAGE}:${BUILD_ID}" \
+          --region "${_REGION}" \
+          --platform managed \
+          --allow-unauthenticated \
+          --port 8080 \
+          --set-env-vars "VITE_API_BASE_URL=$${BACKEND_URL},VITE_AGENT_BASE_URL=$${AGENTS_URL}"
+
+images:
+  - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_BACKEND_IMAGE}:${BUILD_ID}
+  - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_AGENTS_IMAGE}:${BUILD_ID}
+  - ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/${_AR_REPOSITORY}/${_FRONTEND_IMAGE}:${BUILD_ID}
+
+substitutions:
+  _PROJECT_ID: mytodo-app-dev
+  _REGION: asia-south1
+  _VERTEX_REGION: us-central1
+  _AR_REPOSITORY: todo-repo
+  _BACKEND_IMAGE: todo-backend
+  _AGENTS_IMAGE: todo-agents
+  _FRONTEND_IMAGE: todo-frontend
+  _BACKEND_SERVICE: todo-backend
+  _AGENTS_SERVICE: todo-agents
+  _FRONTEND_SERVICE: todo-frontend
+  _BACKEND_INSTANCE_CONNECTION_NAME: mytodo-app-dev:asia-south1:todo-app-dev
+  _BACKEND_PRIVATE_IP: "false"
+  _BACKEND_DB_NAME: todo_app_db
+  _BACKEND_DB_USER: narainkarthik812@gmail.com
+  _BACKEND_CORS_ORIGINS: "*"
+  _AGENTS_ALLOWED_ORIGINS: "*"
+  _VERTEX_MODEL: gemini-2.5-flash-lite
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitution_option: ALLOW_LOOSE

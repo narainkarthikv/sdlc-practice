@@ -25,7 +25,6 @@ services:
       CORS_ORIGINS: http://localhost:8081
       DB_NAME: ${DB_NAME:-todoist}
       DB_USER: ${DB_USER:-todoist_user}
-      DB_PASSWORD: ${DB_PASSWORD:-}
       DB_HOST: ${DB_HOST:-cloud-sql-proxy}
       DB_PORT: ${DB_PORT:-5432}
       INSTANCE_CONNECTION_NAME: ${INSTANCE_CONNECTION_NAME:-}
@@ -52,6 +51,7 @@ services:
     command:
       - "--address=127.0.0.1"
       - "--port=5432"
+      - "--auth-iam-authn"
       - "${INSTANCE_CONNECTION_NAME:-}"
     environment:
       INSTANCE_CONNECTION_NAME: ${INSTANCE_CONNECTION_NAME:-}

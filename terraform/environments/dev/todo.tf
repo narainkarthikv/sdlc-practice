@@ -54,33 +54,11 @@ resource "google_sql_database" "todo" {
   instance = data.google_sql_database_instance.todo[0].name
 }
 
-resource "random_password" "todo_db" {
-  count   = var.enable_todo_prototype ? 1 : 0
-  length  = 24
-  special = false
-}
-
 resource "google_sql_user" "todo" {
   count    = var.enable_todo_prototype ? 1 : 0
   project  = var.project_id
   name     = var.todo_db_user
   instance = data.google_sql_database_instance.todo[0].name
-  password = random_password.todo_db[0].result
-}
-
-resource "google_secret_manager_secret" "todo_db_password" {
-  count     = var.enable_todo_prototype ? 1 : 0
-  secret_id = "${local.todo_prefix}-db-password"
-
-  replication {
-    auto {}
-  }
-}
-
-resource "google_secret_manager_secret_version" "todo_db_password" {
-  count       = var.enable_todo_prototype ? 1 : 0
-  secret      = google_secret_manager_secret.todo_db_password[0].id
-  secret_data = random_password.todo_db[0].result
 }
 
 resource "google_service_account" "todo_backend" {
@@ -234,17 +212,10 @@ resource "google_cloudfunctions2_function" "todo_backend" {
       PROJECT_ID = var.project_id
     }
 
-    secret_environment_variables {
-      key        = "DB_PASSWORD"
-      project_id = var.project_id
-      secret     = google_secret_manager_secret.todo_db_password[0].secret_id
-      version    = "latest"
-    }
   }
 
   depends_on = [
     google_project_service.todo_required,
-    google_secret_manager_secret_version.todo_db_password,
     google_project_iam_member.todo_backend_roles
   ]
 }

@@ -26,12 +26,16 @@ def _extract_json(text: str) -> dict[str, Any]:
 
 class VertexAIService:
     def __init__(self) -> None:
-        project_id = os.getenv("GCP_PROJECT_ID")
+        project_id = (
+            os.getenv("GCP_PROJECT_ID")
+            or os.getenv("GOOGLE_CLOUD_PROJECT")
+            or os.getenv("GCLOUD_PROJECT")
+        )
         region = os.getenv("GCP_REGION", "us-central1")
         model_name = os.getenv("VERTEX_MODEL", "gemini-1.5-flash-001")
         
         if not project_id:
-            raise RuntimeError("GCP_PROJECT_ID is required")
+            raise RuntimeError("GCP_PROJECT_ID or GOOGLE_CLOUD_PROJECT is required")
         
         # Initialize Vertex AI with ADC (Application Default Credentials)
         vertexai.init(project=project_id, location=region)
@@ -86,4 +90,3 @@ Tasks:
             blockers=list(data.get("blockers", [])),
             recommendations=list(data.get("recommendations", [])),
         )
-

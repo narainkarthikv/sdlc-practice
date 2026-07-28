@@ -186,6 +186,46 @@ cloud-sql-proxy <INSTANCE_CONNECTION_NAME> --auth-iam-authn
 
 Replace `<INSTANCE_CONNECTION_NAME>` with your Cloud SQL instance name (format: `project:region:instance`).
 
+## ☁️ Cloud Run Deployment
+
+The repo includes a Cloud Build config that builds three images, pushes them to Artifact Registry, and deploys three separate Cloud Run services:
+
+- `todo-backend`
+- `todo-agents`
+- `todo-frontend`
+
+The frontend image generates `runtime-config.js` at startup so the backend and agents URLs can be injected from Cloud Run env vars.
+
+Create the Artifact Registry repository once if it does not already exist:
+
+```bash
+gcloud artifacts repositories create todoist-services \
+  --repository-format=docker \
+  --location=asia-south1 \
+  --project=mytodo-app-dev
+```
+
+Then deploy:
+
+```bash
+gcloud builds submit \
+  --config=terraform/cloudbuild/cloudrun-dev.yaml \
+  --project=mytodo-app-dev \
+  .
+```
+
+The build config assumes:
+
+- Cloud SQL instance connection name: `mytodo-app-dev:asia-south1:todo-app-dev`
+- Backend database: `todo_app_db`
+- Backend database user: `narainkarthik812@gmail.com`
+- Agents Vertex region: `us-central1`
+- Public CORS on backend and agents so the frontend can call them directly from Cloud Run
+
+Run that command from the repository root so Cloud Build receives `backend/`, `agents/`, and `frontend/` in the source archive. If you are standing inside `terraform/cloudbuild`, the source argument needs to be `../..` instead of `.`.
+
+If your runtime service accounts are locked down, make sure the backend Cloud Run service account has `roles/cloudsql.client` and the agents service account has `roles/aiplatform.user`.
+
 ## ⚙️ Configuration
 
 ### Backend Environment Variables
@@ -197,19 +237,14 @@ Create `backend/.env`:
 PORT=8080
 
 # Database Configuration
-DB_CONNECTION_MODE=proxy  # or 'connector' for Cloud Run
-
-# For proxy mode (local development)
-DATABASE_URL=postgresql://user:password@localhost:5432/dbname
-DB_HOST=localhost
-DB_PORT=5432
-DB_SOCKET_DIR=/cloudsql
-
-# For connector mode (Cloud Run)
-INSTANCE_CONNECTION_NAME=project:region:instance
+# proxy for local development, connector for Cloud Run
+DB_CONNECTION_MODE=proxy
+INSTANCE_CONNECTION_NAME=mytodo-app-dev:asia-south1:todo-app-dev
+PRIVATE_IP=false
 DB_NAME=todoist
-DB_USER=service-account@project.iam
-DB_PASSWORD=  # Leave empty for IAM auth
+DB_USER=todoist_user
+DB_HOST=127.0.0.1
+DB_PORT=5432
 
 # CORS
 CORS_ORIGINS=http://localhost:5173,http://localhost:8081
@@ -337,7 +372,6 @@ gcloud auth application-default login
 export INSTANCE_CONNECTION_NAME=project:region:instance
 export DB_NAME=todoist
 export DB_USER=service-account@project.iam
-export DB_PASSWORD=  # Optional for IAM auth
 export GEMINI_API_KEY=your-api-key
 ```
 

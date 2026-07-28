@@ -1,0 +1,4 @@
+window.__APP_CONFIG__ = {
+  VITE_API_BASE_URL: "http://localhost:8080",
+  VITE_AGENT_BASE_URL: "http://localhost:9000"
+};

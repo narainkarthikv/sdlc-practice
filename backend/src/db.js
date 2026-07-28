@@ -18,29 +18,24 @@ function requireDbCredentials() {
     throw new Error("DB_USER and DB_NAME are required");
   }
 
-  return { user, password: process.env.DB_PASSWORD, database };
+  return { user, database };
+}
+
+function getIpType() {
+  return process.env.PRIVATE_IP === "1" || process.env.PRIVATE_IP === "true"
+    ? "PRIVATE"
+    : "PUBLIC";
 }
 
 function buildProxyPoolConfig() {
-  if (process.env.DATABASE_URL) {
-    return {
-      connectionString: process.env.DATABASE_URL,
-      ssl:
-        process.env.PGSSLMODE === "require" || process.env.PGSSL === "true"
-          ? { rejectUnauthorized: false }
-          : undefined
-    };
-  }
-
   const host = process.env.DB_HOST || "127.0.0.1";
   const port = Number(process.env.DB_PORT || 5432);
-  const { user, password, database } = requireDbCredentials();
+  const { user, database } = requireDbCredentials();
 
   return {
     host,
     port,
     user,
-    password,
     database,
     ssl:
       host === "127.0.0.1" || host === "localhost" || process.env.PGSSLMODE === "disable"
@@ -57,18 +52,17 @@ async function buildConnectorPoolConfig() {
     throw new Error("INSTANCE_CONNECTION_NAME is required for connector mode");
   }
 
-  const { user, password, database } = requireDbCredentials();
+  const { user, database } = requireDbCredentials();
   connector = new Connector();
   const clientOpts = await connector.getOptions({
     instanceConnectionName,
-    ipType:
-      process.env.PRIVATE_IP === "1" || process.env.PRIVATE_IP === "true" ? "PRIVATE" : "PUBLIC"
+    authType: "IAM",
+    ipType: getIpType()
   });
 
   return {
     ...clientOpts,
     user,
-    password: password || clientOpts.password,
     database
   };
 }

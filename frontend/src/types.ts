@@ -4,6 +4,7 @@ export type SummaryPeriod = "day" | "week" | "month" | "year";
 
 export type Task = {
   id: string;
+  ownerId: string;
   title: string;
   description: string | null;
   status: TaskStatus;
@@ -36,3 +37,26 @@ export type TaskSummaryResponse = {
   recommendations: string[];
 };
 
+export type AuthUser = {
+  id: string;
+  displayName: string;
+  email: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AuthSession = {
+  user: AuthUser;
+  sessionId: string;
+};
+
+export type SignupInput = {
+  displayName: string;
+  email: string;
+  password: string;
+};
+
+export type LoginInput = {
+  email: string;
+  password: string;
+};
