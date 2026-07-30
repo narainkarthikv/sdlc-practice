@@ -186,46 +186,6 @@ cloud-sql-proxy <INSTANCE_CONNECTION_NAME> --auth-iam-authn
 
 Replace `<INSTANCE_CONNECTION_NAME>` with your Cloud SQL instance name (format: `project:region:instance`).
 
-## ☁️ Cloud Run Deployment
-
-The repo includes a Cloud Build config that builds three images, pushes them to Artifact Registry, and deploys three separate Cloud Run services:
-
-- `todo-backend`
-- `todo-agents`
-- `todo-frontend`
-
-The frontend image generates `runtime-config.js` at startup so the backend and agents URLs can be injected from Cloud Run env vars.
-
-Create the Artifact Registry repository once if it does not already exist:
-
-```bash
-gcloud artifacts repositories create todoist-services \
-  --repository-format=docker \
-  --location=asia-south1 \
-  --project=mytodo-app-dev
-```
-
-Then deploy:
-
-```bash
-gcloud builds submit \
-  --config=terraform/cloudbuild/cloudrun-dev.yaml \
-  --project=mytodo-app-dev \
-  .
-```
-
-The build config assumes:
-
-- Cloud SQL instance connection name: `mytodo-app-dev:asia-south1:todo-app-dev`
-- Backend database: `todo_app_db`
-- Backend database user: `narainkarthik812@gmail.com`
-- Agents Vertex region: `us-central1`
-- Public CORS on backend and agents so the frontend can call them directly from Cloud Run
-
-Run that command from the repository root so Cloud Build receives `backend/`, `agents/`, and `frontend/` in the source archive. If you are standing inside `terraform/cloudbuild`, the source argument needs to be `../..` instead of `.`.
-
-If your runtime service accounts are locked down, make sure the backend Cloud Run service account has `roles/cloudsql.client` and the agents service account has `roles/aiplatform.user`.
-
 ## ⚙️ Configuration
 
 ### Backend Environment Variables
@@ -255,8 +215,8 @@ CORS_ORIGINS=http://localhost:5173,http://localhost:8081
 Create `frontend/.env`:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8080
-VITE_AGENT_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=/api
+VITE_AGENT_BASE_URL=/agents
 ```
 
 ### Agents Environment Variables

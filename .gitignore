@@ -83,3 +83,5 @@ logs/
 # Local service scripts
 run-all-services.sh
 cloud-sql-proxy
+cloudrun-dev.yaml
+

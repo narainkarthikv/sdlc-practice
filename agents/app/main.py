@@ -7,15 +7,15 @@ from uuid import uuid4
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.requests import Request
 
 # Load .env file explicitly
 env_file = Path(__file__).parent.parent / ".env"
 load_dotenv(env_file)
 
 from .gemini import VertexAIService
+from .service_auth import require_service_caller
 from .schemas import ProductivityRequest, SummaryResponse, TaskSummaryRequest, TaskSummaryResponse
 
 app = FastAPI(title="Todoist AI Agents", version="1.0.0")
@@ -46,6 +46,7 @@ def get_vertex_service() -> VertexAIService:
 
 @app.middleware("http")
 async def request_logging(request: Request, call_next):
+    require_service_caller(request)
     request_id = request.headers.get("x-request-id") or str(uuid4())
     started_at = time.perf_counter()
     status_code = 500

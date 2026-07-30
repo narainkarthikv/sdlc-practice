@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { ZodError } from "zod";
 import { closeDb, ensureDbConnection } from "./db.js";
 import { requireUser } from "./auth/requireUser.js";
+import { requireServiceCaller } from "./auth/serviceAuth.js";
 import { initializeDatabase } from "./init-db.js";
 import { loginUser, signupUser } from "./auth/users.js";
 import { createTask, deleteTask, getTask, listTasks, taskStats, updateTask } from "./tasks.js";
@@ -22,6 +23,9 @@ app.use(
   })
 );
 app.use(express.json({ limit: "1mb" }));
+app.use((req, res, next) => {
+  requireServiceCaller(req).then(() => next()).catch(next);
+});
 app.use((req, res, next) => {
   const requestId = req.header("x-request-id") || randomUUID();
   const startedAt = Date.now();

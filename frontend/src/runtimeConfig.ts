@@ -29,11 +29,11 @@ function readConfiguredValue(
 export const apiBaseUrl = readConfiguredValue(
   readRuntimeConfig().VITE_API_BASE_URL,
   import.meta.env.VITE_API_BASE_URL,
-  "https://todo-backend-143058686948.asia-south1.run.app"
+  "/api"
 );
 
 export const agentBaseUrl = readConfiguredValue(
   readRuntimeConfig().VITE_AGENT_BASE_URL,
   import.meta.env.VITE_AGENT_BASE_URL,
-  "https://todo-agents-143058686948.asia-south1.run.app"
+  "/agents"
 );
