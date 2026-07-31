@@ -1,14 +1,20 @@
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const port = Number(process.env.PORT || 8080);
 const distDir = resolve("dist");
-const backendServiceUrl = normalizeServiceUrl(process.env.BACKEND_SERVICE_URL || "/api");
-const agentsServiceUrl = normalizeServiceUrl(process.env.AGENTS_SERVICE_URL || "/agents");
-const runtimeApiBaseUrl = process.env.PUBLIC_API_BASE_URL || "/api";
-const runtimeAgentBaseUrl = process.env.PUBLIC_AGENT_BASE_URL || "/agents";
+const backendServiceUrl = normalizeServiceUrl(
+  process.env.API_BASE_URL || process.env.BACKEND_SERVICE_URL || "/api"
+);
+const agentsServiceUrl = normalizeServiceUrl(
+  process.env.AGENT_BASE_URL || process.env.AGENTS_SERVICE_URL || "/agents"
+);
 const identityTokenCache = new Map();
+const isDirectExecution = process.argv[1]
+  ? resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  : false;
 
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
@@ -30,13 +36,6 @@ function base64UrlDecode(value) {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
   return Buffer.from(padded, "base64").toString("utf8");
-}
-
-function buildRuntimeConfigScript() {
-  return `window.__APP_CONFIG__ = ${JSON.stringify({
-    VITE_API_BASE_URL: runtimeApiBaseUrl,
-    VITE_AGENT_BASE_URL: runtimeAgentBaseUrl
-  })};\n`;
 }
 
 async function getIdentityToken(audience) {
@@ -153,13 +152,6 @@ async function handleRequest(request, response) {
     return;
   }
 
-  if (requestUrl.pathname === "/runtime-config.js") {
-    response.statusCode = 200;
-    response.setHeader("content-type", "application/javascript; charset=utf-8");
-    response.end(buildRuntimeConfigScript());
-    return;
-  }
-
   if (requestUrl.pathname.startsWith("/api/") || requestUrl.pathname === "/api") {
     await proxyRequest(request, response, backendServiceUrl);
     return;
@@ -190,13 +182,19 @@ async function handleRequest(request, response) {
   await serveStaticFile(response, join(distDir, "index.html"));
 }
 
-createServer((request, response) => {
-  handleRequest(request, response).catch((error) => {
-    console.error(error);
-    response.statusCode = 500;
-    response.setHeader("content-type", "application/json; charset=utf-8");
-    response.end(JSON.stringify({ message: "Internal server error" }));
+export async function todoFrontend(request, response) {
+  await handleRequest(request, response);
+}
+
+if (isDirectExecution) {
+  createServer((request, response) => {
+    handleRequest(request, response).catch((error) => {
+      console.error(error);
+      response.statusCode = 500;
+      response.setHeader("content-type", "application/json; charset=utf-8");
+      response.end(JSON.stringify({ message: "Internal server error" }));
+    });
+  }).listen(port, () => {
+    console.log(`Frontend server listening on ${port}`);
   });
-}).listen(port, () => {
-  console.log(`Frontend server listening on ${port}`);
-});
+}

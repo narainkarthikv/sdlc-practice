@@ -6,6 +6,10 @@ const { Pool } = pg;
 let poolPromise;
 let connector;
 
+function getDefaultRole() {
+  return process.env.DB_ROLE || "todo_developer";
+}
+
 function getConnectionMode() {
   return (process.env.DB_CONNECTION_MODE || "proxy").toLowerCase();
 }
@@ -25,6 +29,14 @@ function getIpType() {
   return process.env.PRIVATE_IP === "1" || process.env.PRIVATE_IP === "true"
     ? "PRIVATE"
     : "PUBLIC";
+}
+
+function quoteIdentifier(identifier) {
+  return `"${String(identifier).replace(/"/g, '""')}"`;
+}
+
+function buildRoleSetupQuery() {
+  return `set role ${quoteIdentifier(getDefaultRole())}`;
 }
 
 function buildProxyPoolConfig() {
@@ -70,7 +82,13 @@ async function buildConnectorPoolConfig() {
 async function createPool() {
   const mode = getConnectionMode();
   const config = mode === "connector" ? await buildConnectorPoolConfig() : buildProxyPoolConfig();
-  return new Pool(config);
+  const pool = new Pool(config);
+
+  pool.on("connect", (client) => {
+    client.roleReadyPromise = client.query(buildRoleSetupQuery());
+  });
+
+  return pool;
 }
 
 export async function getPool() {
@@ -83,7 +101,14 @@ export async function getPool() {
 
 export async function query(text, params) {
   const pool = await getPool();
-  return pool.query(text, params);
+  const client = await pool.connect();
+
+  try {
+    await client.roleReadyPromise;
+    return await client.query(text, params);
+  } finally {
+    client.release();
+  }
 }
 
 export async function ensureDbConnection() {

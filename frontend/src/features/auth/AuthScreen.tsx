@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useAppDispatch } from "../../app/hooks";
 import { useTheme } from "../../themeContext";
 import { setCredentials } from "./authSlice";
@@ -7,33 +7,18 @@ import type { LoginInput, SignupInput } from "../../types";
 
 type Mode = "login" | "signup";
 
-const emptyLogin: LoginInput = {
-  email: "",
-  password: ""
-};
-
-const emptySignup: SignupInput = {
-  displayName: "",
-  email: "",
-  password: ""
-};
+const emptyLogin: LoginInput = { email: "", password: "" };
+const emptySignup: SignupInput = { displayName: "", email: "", password: "" };
 
 function getMutationErrorMessage(error: unknown) {
-  if (!error || typeof error !== "object") {
-    return "Something went wrong";
-  }
-
+  if (!error || typeof error !== "object") return "Something went wrong";
   if ("data" in error && typeof (error as { data?: unknown }).data === "object") {
     const data = (error as { data?: { message?: unknown } }).data;
-    if (data?.message && typeof data.message === "string") {
-      return data.message;
-    }
+    if (typeof data?.message === "string") return data.message;
   }
-
   if ("error" in error && typeof (error as { error?: unknown }).error === "string") {
     return (error as { error: string }).error;
   }
-
   return "Something went wrong";
 }
 
@@ -48,193 +33,56 @@ export default function AuthScreen() {
   const activeState = mode === "login" ? loginState : signupState;
 
   useEffect(() => {
-    document.title = mode === "login" ? "Log in" : "Create account";
+    document.title = `${mode === "login" ? "Log in" : "Create account"} | Todoist SDLC`;
   }, [mode]);
-
-  const submitLabel = useMemo(
-    () => (mode === "login" ? "Log in" : "Create account"),
-    [mode]
-  );
 
   async function handleLoginSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const response = await login(loginForm).unwrap();
-    dispatch(setCredentials(response));
+    dispatch(setCredentials(await login(loginForm).unwrap()));
   }
 
   async function handleSignupSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const response = await signup(signupForm).unwrap();
-    dispatch(setCredentials(response));
+    dispatch(setCredentials(await signup(signupForm).unwrap()));
   }
 
   return (
-    <main className="theme-transition min-h-screen px-4 py-8 text-slate-900 dark:text-slate-100 light:text-slate-900 sm:px-6 lg:px-8">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="theme-transition relative overflow-hidden rounded-[2rem] border p-8 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:shadow-glow light:border-slate-300 light:bg-slate-50">
-          <div className="absolute inset-0 opacity-50">
-            <div className="absolute left-0 top-0 h-48 w-48 rounded-full bg-cyan-400/20 blur-3xl" />
-            <div className="absolute bottom-0 right-0 h-56 w-56 rounded-full bg-blue-500/20 blur-3xl" />
-          </div>
+    <main className="auth-shell theme-transition">
+      <section className="auth-showcase">
+        <div className="auth-grid" />
+        <div className="auth-brand"><div className="brand-mark"><CheckIcon /></div><div><strong>Todoist</strong><span>SDLC workspace</span></div></div>
+        <div className="auth-hero">
+          <p className="eyebrow">A calmer way to ship</p>
+          <h1>Make progress visible.</h1>
+          <p>Bring your tasks, momentum, and next best actions into one focused workspace built for teams that care about getting work over the line.</p>
+          <div className="auth-feature-row"><div className="auth-feature"><CheckIcon /> Clear task ownership</div><div className="auth-feature"><SparkIcon /> AI-powered focus</div><div className="auth-feature"><ShieldIcon /> Private by design</div></div>
+        </div>
+        <div className="auth-quote"><span /> Built for focused teams, not busywork.</div>
+      </section>
 
-          <div className="relative z-10 flex h-full flex-col justify-between gap-8">
-            <div className="max-w-xl">
-              <p className="theme-transition text-sm uppercase tracking-[0.35em] dark:text-cyan-300/80 light:text-blue-600/80">
-                Todoist SDLC
-              </p>
-              <h1 className="theme-transition mt-4 text-4xl font-semibold tracking-tight dark:text-white light:text-slate-900 sm:text-5xl">
-                One account for tasks, summaries, and the workflow you want to keep moving.
-              </h1>
-              <p className="theme-transition mt-4 max-w-lg text-sm leading-7 dark:text-slate-300 light:text-slate-600">
-                Use a UUID-backed account record, bcrypt password hashing, and a Redux Toolkit auth
-                flow that keeps login state predictable on the client.
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                ["UUID identity", "Every account gets a stable server-generated ID."],
-                ["Bcrypt hashing", "Passwords are stored as salted hashes."],
-                ["RTK mutations", "Auth calls stay isolated and cache-friendly."]
-              ].map(([title, body]) => (
-                <article
-                  key={title}
-                  className="theme-transition rounded-2xl border p-4 dark:border-white/10 dark:bg-slate-950/50 light:border-slate-300 light:bg-white/80"
-                >
-                  <h2 className="text-sm font-semibold dark:text-white light:text-slate-900">
-                    {title}
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 dark:text-slate-300 light:text-slate-600">
-                    {body}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="theme-transition flex flex-col justify-center rounded-[2rem] border p-6 dark:border-white/10 dark:bg-slate-950/55 dark:shadow-glow light:border-slate-300 light:bg-slate-50 sm:p-8">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="theme-transition text-sm uppercase tracking-[0.3em] dark:text-slate-400 light:text-slate-500">
-                Account access
-              </p>
-              <h2 className="theme-transition mt-2 text-2xl font-semibold dark:text-white light:text-slate-900">
-                {mode === "login" ? "Welcome back" : "Create your account"}
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="theme-transition flex h-11 w-11 items-center justify-center rounded-full border text-lg dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 light:border-slate-300 light:bg-white light:hover:bg-slate-100"
-              aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-            >
-              {theme === "light" ? "🌙" : "☀️"}
-            </button>
-          </div>
-
-          <div className="mt-6 grid grid-cols-2 gap-2 rounded-2xl border p-1 dark:border-white/10 dark:bg-white/5 light:border-slate-300 light:bg-white">
-            {(["signup", "login"] as Mode[]).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setMode(option)}
-                className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-                  mode === option
-                    ? "dark:bg-cyan-400 light:bg-blue-600 light:text-white dark:text-slate-950"
-                    : "dark:text-slate-300 light:text-slate-600"
-                }`}
-              >
-                {option === "signup" ? "Sign up" : "Log in"}
-              </button>
-            ))}
-          </div>
-
-          <form
-            className="mt-6 grid gap-4"
-            onSubmit={mode === "login" ? handleLoginSubmit : handleSignupSubmit}
-          >
-            {mode === "signup" ? (
-              <label className="grid gap-2 text-sm">
-                <span className="font-medium dark:text-slate-200 light:text-slate-700">
-                  Display name
-                </span>
-                <input
-                  className="theme-transition w-full rounded-2xl border px-4 py-3 outline-none placeholder:text-slate-500 focus:border-cyan-400/50 dark:border-white/10 dark:bg-white/5 dark:text-white light:border-slate-300 light:bg-white light:text-slate-900 light:focus:border-blue-400"
-                  placeholder="Ari Morgan"
-                  value={signupForm.displayName}
-                  onChange={(event) =>
-                    setSignupForm({ ...signupForm, displayName: event.target.value })
-                  }
-                  autoComplete="name"
-                  required
-                />
-              </label>
-            ) : null}
-
-            <label className="grid gap-2 text-sm">
-              <span className="font-medium dark:text-slate-200 light:text-slate-700">Email</span>
-              <input
-                type="email"
-                className="theme-transition w-full rounded-2xl border px-4 py-3 outline-none placeholder:text-slate-500 focus:border-cyan-400/50 dark:border-white/10 dark:bg-white/5 dark:text-white light:border-slate-300 light:bg-white light:text-slate-900 light:focus:border-blue-400"
-                placeholder="you@example.com"
-                value={mode === "login" ? loginForm.email : signupForm.email}
-                onChange={(event) => {
-                  if (mode === "login") {
-                    setLoginForm({ ...loginForm, email: event.target.value });
-                    return;
-                  }
-
-                  setSignupForm({ ...signupForm, email: event.target.value });
-                }}
-                autoComplete="email"
-                required
-              />
-            </label>
-
-            <label className="grid gap-2 text-sm">
-              <span className="font-medium dark:text-slate-200 light:text-slate-700">Password</span>
-              <input
-                type="password"
-                className="theme-transition w-full rounded-2xl border px-4 py-3 outline-none placeholder:text-slate-500 focus:border-cyan-400/50 dark:border-white/10 dark:bg-white/5 dark:text-white light:border-slate-300 light:bg-white light:text-slate-900 light:focus:border-blue-400"
-                placeholder="At least 8 characters"
-                value={mode === "login" ? loginForm.password : signupForm.password}
-                onChange={(event) => {
-                  if (mode === "login") {
-                    setLoginForm({ ...loginForm, password: event.target.value });
-                    return;
-                  }
-
-                  setSignupForm({ ...signupForm, password: event.target.value });
-                }}
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                minLength={8}
-                required
-              />
-            </label>
-
-            <button
-              type="submit"
-              disabled={activeState.isLoading}
-              className="theme-transition rounded-2xl px-4 py-3 font-medium text-slate-950 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-cyan-400 light:bg-blue-600 light:text-white"
-            >
-              {activeState.isLoading ? "Working..." : submitLabel}
-            </button>
+      <section className="auth-form-side">
+        <div className="auth-form-wrap">
+          <div className="auth-form-top"><div><p className="eyebrow">Welcome to your workspace</p><h2>{mode === "login" ? "Welcome back" : "Start making progress"}</h2></div><button type="button" className="icon-button auth-theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}>{theme === "light" ? <MoonIcon /> : <SunIcon />}</button></div>
+          <div className="auth-toggle" role="tablist" aria-label="Account access"><button type="button" className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Create account</button><button type="button" className={mode === "login" ? "active" : ""} onClick={() => setMode("login")}>Log in</button></div>
+          <form className="auth-form" onSubmit={mode === "login" ? handleLoginSubmit : handleSignupSubmit}>
+            {mode === "signup" ? <label className="auth-field"><span>Display name</span><input placeholder="Ari Morgan" value={signupForm.displayName} onChange={(event) => setSignupForm({ ...signupForm, displayName: event.target.value })} autoComplete="name" required /></label> : null}
+            <label className="auth-field"><span>Email address</span><input type="email" placeholder="you@example.com" value={mode === "login" ? loginForm.email : signupForm.email} onChange={(event) => mode === "login" ? setLoginForm({ ...loginForm, email: event.target.value }) : setSignupForm({ ...signupForm, email: event.target.value })} autoComplete="email" required /></label>
+            <label className="auth-field"><span>Password</span><input type="password" placeholder="At least 8 characters" value={mode === "login" ? loginForm.password : signupForm.password} onChange={(event) => mode === "login" ? setLoginForm({ ...loginForm, password: event.target.value }) : setSignupForm({ ...signupForm, password: event.target.value })} autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={8} required /></label>
+            <button type="submit" className="button button-primary auth-submit" disabled={activeState.isLoading}>{activeState.isLoading ? "Setting things up..." : mode === "login" ? "Continue to workspace" : "Create my workspace"}<ArrowIcon /></button>
           </form>
-
-          {activeState.error ? (
-            <div className="mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-              {getMutationErrorMessage(activeState.error)}
-            </div>
-          ) : null}
-
-          <p className="mt-5 text-sm leading-6 dark:text-slate-400 light:text-slate-600">
-            {mode === "login"
-              ? "New here? Switch to sign up and create your account first."
-              : "Already have an account? Switch to login and use the same email/password pair."}
-          </p>
-        </section>
-      </div>
+          {activeState.error ? <div className="alert alert-error auth-error"><AlertIcon /> <span>{getMutationErrorMessage(activeState.error)}</span></div> : null}
+          <p className="auth-switch-copy">{mode === "login" ? "New to Todoist SDLC? Create an account to keep your team moving." : "Already have an account? Log in to pick up where you left off."}</p>
+        </div>
+      </section>
     </main>
   );
 }
+
+function Icon({ children }: { children: React.ReactNode }) { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>; }
+const CheckIcon = () => <Icon><path d="m5 12 4 4L19 6" /></Icon>;
+const SparkIcon = () => <Icon><path d="m12 3-1.5 5.5L5 10l5.5 1.5L12 17l1.5-5.5L19 10l-5.5-1.5L12 3Z" /></Icon>;
+const ShieldIcon = () => <Icon><path d="M12 3 4.5 6v5c0 4.8 3.1 8.2 7.5 10 4.4-1.8 7.5-5.2 7.5-10V6L12 3Z" /><path d="m9 12 2 2 4-4" /></Icon>;
+const ArrowIcon = () => <Icon><path d="M5 12h14M13 6l6 6-6 6" /></Icon>;
+const AlertIcon = () => <Icon><path d="M12 4 3 20h18L12 4Z" /><path d="M12 10v4M12 17h.01" /></Icon>;
+const MoonIcon = () => <Icon><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z" /></Icon>;
+const SunIcon = () => <Icon><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></Icon>;

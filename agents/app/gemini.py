@@ -24,6 +24,32 @@ def _extract_json(text: str) -> dict[str, Any]:
     return json.loads(cleaned[start : end + 1])
 
 
+def _string_list(value: Any) -> list[str]:
+    """Keep model list fields compatible when Gemini returns rich objects."""
+    if not isinstance(value, list):
+        return []
+
+    result: list[str] = []
+    preferred_keys = ("recommendation", "action", "rationale", "description", "message", "text")
+    for item in value:
+        if isinstance(item, str):
+            result.append(item)
+            continue
+
+        if isinstance(item, dict):
+            text = next(
+                (item[key] for key in preferred_keys if isinstance(item.get(key), str)),
+                None,
+            )
+            if text:
+                result.append(text)
+                continue
+
+        result.append(str(item))
+
+    return result
+
+
 class VertexAIService:
     def __init__(self) -> None:
         project_id = (
@@ -59,9 +85,9 @@ Tasks:
         data = _extract_json(response.text or "{}")
         return SummaryResponse(
             summary=data.get("summary", ""),
-            highlights=list(data.get("highlights", [])),
-            risks=list(data.get("risks", [])),
-            nextSteps=list(data.get("nextSteps", [])),
+            highlights=_string_list(data.get("highlights", [])),
+            risks=_string_list(data.get("risks", [])),
+            nextSteps=_string_list(data.get("nextSteps", [])),
         )
 
     def task_summary(self, payload: TaskSummaryRequest) -> TaskSummaryResponse:
@@ -75,6 +101,7 @@ Tasks:
 You are a delivery analyst reviewing application tasks.
 Return strict JSON with keys: summary, blockers, recommendations.
 Focus on work distribution, overdue risk, and delivery bottlenecks.
+Both blockers and recommendations must be arrays of short plain-text strings, never objects.
 
 Context:
 {payload.applicationContext or "No application context provided."}
@@ -87,6 +114,6 @@ Tasks:
         return TaskSummaryResponse(
             summary=data.get("summary", ""),
             breakdown=breakdown,
-            blockers=list(data.get("blockers", [])),
-            recommendations=list(data.get("recommendations", [])),
+            blockers=_string_list(data.get("blockers", [])),
+            recommendations=_string_list(data.get("recommendations", [])),
         )
