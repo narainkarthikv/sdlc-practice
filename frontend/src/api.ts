@@ -86,9 +86,9 @@ export function fetchProductivitySummary(
   });
 }
 
-export function fetchTaskSummary(tasks: Task[]): Promise<TaskSummaryResponse> {
+export function fetchTaskSummary(period: SummaryPeriod, tasks: Task[]): Promise<TaskSummaryResponse> {
   return requestJson<TaskSummaryResponse>(`${agentBaseUrl}/v1/summaries/tasks`, {
     method: "POST",
-    body: JSON.stringify({ tasks: requireJsonBody(tasks, "Task summary tasks") })
+    body: JSON.stringify({ period, tasks: requireJsonBody(tasks, "Task summary tasks") })
   });
 }

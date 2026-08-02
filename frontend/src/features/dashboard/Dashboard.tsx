@@ -80,7 +80,7 @@ function isTaskInPeriod(task: Task, period: SummaryPeriod, now = new Date()): bo
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
-  end.setDate(end.getDate() + getPeriodWindowDays(period));
+  end.setDate(end.getDate() + getPeriodWindowDays(period) - 1);
   end.setHours(23, 59, 59, 999);
   return dueDate >= start && dueDate <= end;
 }
@@ -253,12 +253,12 @@ export default function Dashboard() {
     try {
       if (periodTasks.length === 0) {
         setProductivitySummary({ period, summary: "No tasks are due within the selected period.", highlights: [], risks: [], nextSteps: [] });
-        setTaskSummary(await fetchTaskSummary(tasks));
+        setTaskSummary(await fetchTaskSummary(period, periodTasks));
         return;
       }
       const [productivity, taskSummaryResponse] = await Promise.all([
         fetchProductivitySummary(period, periodTasks),
-        fetchTaskSummary(tasks)
+        fetchTaskSummary(period, periodTasks)
       ]);
       setProductivitySummary(productivity);
       setTaskSummary(taskSummaryResponse);

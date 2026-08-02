@@ -8,7 +8,25 @@ from typing import Any
 import vertexai
 from vertexai.generative_models import GenerativeModel
 
-from .schemas import ProductivityRequest, SummaryResponse, TaskSummaryRequest, TaskSummaryResponse
+from .schemas import (
+    ProductivityRequest,
+    SummaryResponse,
+    TaskSummaryRequest,
+    TaskSummaryResponse,
+    tasks_for_period,
+)
+
+SYSTEM_PROMPT = """
+You write task summaries for busy people, not software engineers.
+Always use simple, everyday language that a non-technical person can understand.
+Use short sentences and explain what the work means in practical terms.
+Avoid technical, corporate, management, and AI jargon. Do not use words such as
+"bottleneck", "bandwidth", "throughput", "delivery risk", "optimization", or
+"blocker" unless you immediately explain them in plain words.
+Focus on what was done, what needs attention, and what the person should do next.
+Be specific and helpful, but do not invent information that is not in the tasks.
+Return only the JSON format requested by the user prompt.
+"""
 
 
 def _extract_json(text: str) -> dict[str, Any]:
@@ -65,20 +83,26 @@ class VertexAIService:
         
         # Initialize Vertex AI with ADC (Application Default Credentials)
         vertexai.init(project=project_id, location=region)
-        self.model = GenerativeModel(model_name)
+        self.model = GenerativeModel(
+            model_name,
+            system_instruction=SYSTEM_PROMPT,
+        )
 
     def productivity_summary(self, payload: ProductivityRequest) -> SummaryResponse:
-        tasks_json = json.dumps([task.model_dump() for task in payload.tasks], indent=2)
+        tasks = tasks_for_period(payload.tasks, payload.period)
+        tasks_json = json.dumps([task.model_dump() for task in tasks], indent=2)
         prompt = f"""
 You are a senior productivity analyst.
 Summarize the following work for the {payload.period} period.
 Return strict JSON with keys: summary, highlights, risks, nextSteps.
-Each list must contain short actionable strings.
+Use simple words and short sentences. Write for a person who does not work in
+technology. Say what the tasks mean in everyday terms. Each list must contain
+short, useful strings. Do not mention the JSON format in any returned value.
 
 Context:
 {payload.context or "No additional context provided."}
 
-Tasks:
+Tasks due in the selected period:
 {tasks_json}
 """
         response = self.model.generate_content(prompt)
@@ -91,7 +115,12 @@ Tasks:
         )
 
     def task_summary(self, payload: TaskSummaryRequest) -> TaskSummaryResponse:
-        tasks = [task.model_dump() for task in payload.tasks]
+        scoped_tasks = (
+            tasks_for_period(payload.tasks, payload.period)
+            if payload.period
+            else payload.tasks
+        )
+        tasks = [task.model_dump() for task in scoped_tasks]
         breakdown = {
             "todo": sum(1 for task in tasks if task["status"] == "todo"),
             "in_progress": sum(1 for task in tasks if task["status"] == "in_progress"),
@@ -100,13 +129,15 @@ Tasks:
         prompt = f"""
 You are a delivery analyst reviewing application tasks.
 Return strict JSON with keys: summary, blockers, recommendations.
-Focus on work distribution, overdue risk, and delivery bottlenecks.
-Both blockers and recommendations must be arrays of short plain-text strings, never objects.
+Describe the current work in simple everyday language. Explain what needs
+attention and what the person should do next. Do not use technical or corporate
+jargon. Both blockers and recommendations must be arrays of short plain-text
+strings, never objects.
 
 Context:
 {payload.applicationContext or "No application context provided."}
 
-Tasks:
+Tasks{f' due in the selected {payload.period} period' if payload.period else ''}:
 {json.dumps(tasks, indent=2)}
 """
         response = self.model.generate_content(prompt)
