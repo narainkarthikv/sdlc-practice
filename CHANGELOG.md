@@ -7,26 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Planned changes will be recorded here before the next release.
+
+## [1.1.0] - 2026-08-03
+
+This release covers the coordinated frontend, backend, and agents work delivered
+between 2026-07-09 and 2026-08-02. The frontend and backend packages are both
+versioned `1.1.0`; the agents service is documented as part of the platform
+release and does not currently publish an npm package.
+
 ### Added
-- **Dark/Light Mode Toggle**: User-selectable theme with system preference detection and localStorage persistence
-- **Task Completion Streak Counter**: Visual indicator showing consecutive completed tasks to boost motivation
-- **Quick Task Filters**: One-click filtering by status (Todo, In Progress, Done) and priority (High, Low)
-- **Unified Service Launcher**: `run-all-services.sh` script to start all services with a single command
-- **Modern UI/UX**: Revamped interface with smooth transitions, theme-aware styling, and improved accessibility
-- Theme context provider with system preference detection
-- Responsive stat cards with improved visual hierarchy
-- Enhanced task cards with theme-aware badges
+
+- **Frontend state management**: Redux Toolkit store, authentication state, and
+  shared task and summary API types.
+- **User accounts and ownership**: signup/login flows, bcrypt password hashing,
+  authenticated requests, and per-user task ownership in the backend.
+- **Google authentication**: Google identity support and authenticated
+  frontend-to-service routing.
+- **Private service communication**: service authentication for backend and
+  agents calls, with the public frontend acting as the browser-facing proxy.
+- **Database migrations**: TypeORM datasource and migrations for the task
+  schema and task ownership index.
+- **Period-scoped summaries**: day, week, month, and year filters for
+  productivity and task summaries based on due dates.
 
 ### Changed
-- Updated frontend UI to support both light and dark themes
-- Improved color contrast for better readability
-- Enhanced form inputs with focus states and better visual feedback
-- Modernized button styles with theme-aware hover effects
-- Updated Tailwind configuration to support `light:` variant
+
+- Reworked the dashboard into a responsive, theme-aware SaaS interface with
+  light and dark modes, improved accessibility, focus states, and clearer task
+  statistics.
+- Added system theme detection and persisted the selected theme locally.
+- Updated frontend runtime configuration to use same-origin `/api` and
+  `/agents` routes while keeping service URLs in the server-side proxy.
+- Updated the agents prompts to produce short, practical summaries in plain
+  language and to preserve the structured JSON response contracts.
+- Normalized summary task filtering at both the frontend and agents service so
+  the selected period changes the actual AI input.
 
 ### Fixed
-- Theme persistence across page reloads
-- Smooth transitions when switching themes
+
+- Corrected inclusive period boundaries so a selected window contains exactly
+  1, 7, 30, or 365 days.
+- Excluded tasks with missing or invalid due dates from period summaries.
+- Improved theme persistence and visual consistency across reloads and screen
+  sizes.
+
+### Source commits
+
+- `fbe335f` — introduced theme switching and the initial UI modernization.
+- `0d6b0a3` — added Redux state management, authentication, and task ownership.
+- `2e78fc4` — added Google authentication and service routing.
+- `15b4dc6` — refined responsive styling, runtime configuration, and service
+  configuration.
+- `1244447` — added period filtering and plain-language AI prompts.
 
 ## [1.0.0] - 2024-07-08
 
@@ -66,4 +99,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Version History
 
 - **1.0.0** - Initial production release (2024-07-08)
-- **Unreleased** - UI/UX modernization with theme support
+- **1.1.0** - Coordinated frontend, backend, and agents feature release (2026-08-03)
