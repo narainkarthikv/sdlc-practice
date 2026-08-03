@@ -6,7 +6,6 @@ import { ZodError } from "zod";
 import { closeDb, ensureDbConnection } from "./db.js";
 import { requireUser } from "./auth/requireUser.js";
 import { requireServiceCaller } from "./auth/serviceAuth.js";
-import { initializeDatabase } from "./init-db.js";
 import { loginUser, signupUser } from "./auth/users.js";
 import { createTask, deleteTask, getTask, listTasks, taskStats, updateTask } from "./tasks.js";
 
@@ -164,7 +163,6 @@ app.use((error, _req, res, _next) => {
 
 async function start() {
   await ensureDbConnection();
-  await initializeDatabase();
   const server = app.listen(port, () => {
     console.log(`Backend listening on ${port}`);
   });

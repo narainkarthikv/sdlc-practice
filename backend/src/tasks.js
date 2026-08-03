@@ -4,7 +4,6 @@ import { query } from "./db.js";
 
 export const taskStatuses = ["todo", "in_progress", "done"];
 export const taskPriorities = ["low", "medium", "high"];
-let taskSchemaReadyPromise;
 
 export const taskInputSchema = z.object({
   title: z.string().trim().min(1).max(200),
@@ -46,59 +45,7 @@ function mapTask(row) {
   };
 }
 
-async function ensureTaskSchema() {
-  if (!taskSchemaReadyPromise) {
-    taskSchemaReadyPromise = (async () => {
-      const columnCheck = await query(
-        `
-          select exists (
-            select 1
-            from information_schema.columns
-            where table_schema = 'public'
-              and table_name = 'tasks'
-              and column_name = 'owner_id'
-          ) as exists
-        `
-      );
-
-      if (!columnCheck.rows[0]?.exists) {
-        await query(`alter table tasks add column owner_id uuid`);
-      }
-
-      const constraintCheck = await query(
-        `
-          select exists (
-            select 1
-            from information_schema.table_constraints
-            where table_schema = 'public'
-              and table_name = 'tasks'
-              and constraint_name = 'tasks_owner_id_fkey'
-          ) as exists
-        `
-      );
-
-      if (!constraintCheck.rows[0]?.exists) {
-        await query(`
-          alter table tasks
-          add constraint tasks_owner_id_fkey
-          foreign key (owner_id) references users(id) on delete cascade
-        `);
-      }
-
-      await query(
-        `create index if not exists idx_tasks_owner_updated_at on tasks(owner_id, updated_at desc)`
-      );
-    })().catch((error) => {
-      taskSchemaReadyPromise = undefined;
-      throw error;
-    });
-  }
-
-  return taskSchemaReadyPromise;
-}
-
 export async function listTasks(userId) {
-  await ensureTaskSchema();
   const result = await query(
     `
       select id, owner_id, title, description, status, priority, due_date, created_at, updated_at
@@ -112,7 +59,6 @@ export async function listTasks(userId) {
 }
 
 export async function getTask(userId, id) {
-  await ensureTaskSchema();
   const result = await query(
     `
       select id, owner_id, title, description, status, priority, due_date, created_at, updated_at
@@ -125,7 +71,6 @@ export async function getTask(userId, id) {
 }
 
 export async function createTask(userId, payload) {
-  await ensureTaskSchema();
   const data = taskInputSchema.parse(payload);
   const id = randomUUID();
 
@@ -142,7 +87,6 @@ export async function createTask(userId, payload) {
 }
 
 export async function updateTask(userId, id, payload) {
-  await ensureTaskSchema();
   const data = taskUpdateSchema.parse(payload);
   const current = await getTask(userId, id);
 
@@ -177,13 +121,11 @@ export async function updateTask(userId, id, payload) {
 }
 
 export async function deleteTask(userId, id) {
-  await ensureTaskSchema();
   const result = await query("delete from tasks where id = $1 and owner_id = $2 returning id", [id, userId]);
   return result.rowCount > 0;
 }
 
 export async function taskStats(userId) {
-  await ensureTaskSchema();
   const result = await query(`
     select
       count(*)::int as total,
