@@ -112,8 +112,9 @@ export async function query(text, params) {
 }
 
 export async function ensureDbConnection() {
-  const pool = await getPool();
-  await pool.query("select 1");
+  // Use the same client flow as application queries so a newly connected
+  // client finishes SET ROLE before the health check starts its query.
+  await query("select 1");
 }
 
 export async function closeDb() {

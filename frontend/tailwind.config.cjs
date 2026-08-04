@@ -20,7 +20,7 @@ module.exports = {
         line: "#e6e9f0"
       },
       fontFamily: {
-        sans: ["DM Sans", "Avenir Next", "ui-sans-serif", "system-ui", "sans-serif"]
+        sans: ["Inter", "DM Sans", "Avenir Next", "ui-sans-serif", "system-ui", "sans-serif"]
       },
       borderRadius: {
         panel: "0.9375rem",

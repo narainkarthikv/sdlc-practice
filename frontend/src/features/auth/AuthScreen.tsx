@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useAppDispatch } from "../../app/hooks";
-import { useTheme } from "../../themeContext";
+import { useTheme } from "../../theme/ThemeProvider";
+import { Button } from "../../components/ui/Button";
 import { setCredentials } from "./authSlice";
 import { useLoginMutation, useSignupMutation } from "./authApi";
 import type { LoginInput, SignupInput } from "../../types";
@@ -68,7 +69,7 @@ export default function AuthScreen() {
             {mode === "signup" ? <label className="auth-field"><span>Display name</span><input placeholder="Ari Morgan" value={signupForm.displayName} onChange={(event) => setSignupForm({ ...signupForm, displayName: event.target.value })} autoComplete="name" required /></label> : null}
             <label className="auth-field"><span>Email address</span><input type="email" placeholder="you@example.com" value={mode === "login" ? loginForm.email : signupForm.email} onChange={(event) => mode === "login" ? setLoginForm({ ...loginForm, email: event.target.value }) : setSignupForm({ ...signupForm, email: event.target.value })} autoComplete="email" required /></label>
             <label className="auth-field"><span>Password</span><input type="password" placeholder="At least 8 characters" value={mode === "login" ? loginForm.password : signupForm.password} onChange={(event) => mode === "login" ? setLoginForm({ ...loginForm, password: event.target.value }) : setSignupForm({ ...signupForm, password: event.target.value })} autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={8} required /></label>
-            <button type="submit" className="button button-primary auth-submit" disabled={activeState.isLoading}>{activeState.isLoading ? "Setting things up..." : mode === "login" ? "Continue to workspace" : "Create my workspace"}<ArrowIcon /></button>
+            <Button type="submit" className="auth-submit" disabled={activeState.isLoading}>{activeState.isLoading ? "Setting things up..." : mode === "login" ? "Continue to workspace" : "Create my workspace"}<ArrowIcon /></Button>
           </form>
           {activeState.error ? <div className="alert alert-error auth-error"><AlertIcon /> <span>{getMutationErrorMessage(activeState.error)}</span></div> : null}
           <p className="auth-switch-copy">{mode === "login" ? "New to Todoist SDLC? Create an account to keep your team moving." : "Already have an account? Log in to pick up where you left off."}</p>

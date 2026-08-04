@@ -22,7 +22,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    const html = document.documentElement;
     const body = document.body;
     body.classList.remove("light", "dark");
     body.classList.add(theme);
@@ -35,11 +34,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
 
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

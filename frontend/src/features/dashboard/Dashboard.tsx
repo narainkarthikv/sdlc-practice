@@ -9,7 +9,7 @@ import {
   fetchTasks,
   updateTask
 } from "../../api";
-import { useTheme } from "../../themeContext";
+import { useTheme } from "../../theme/ThemeProvider";
 import type {
   ProductivitySummaryResponse,
   SummaryPeriod,

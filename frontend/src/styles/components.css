@@ -1,0 +1,23 @@
+@layer components {
+  .button {
+    @apply inline-flex items-center justify-center gap-2 rounded-control border border-transparent px-3.5 py-2 text-[13px] font-semibold transition-all duration-200;
+  }
+
+  .button svg { width: 16px; }
+
+  .icon-button {
+    @apply grid place-items-center rounded-control border border-transparent bg-transparent p-2 text-[var(--muted)] transition-all duration-200;
+  }
+
+  .icon-button:hover {
+    @apply border-[var(--line)] bg-[var(--surface-subtle)] text-[var(--ink)];
+  }
+
+  .icon-button svg { width: 17px; }
+
+  .panel {
+    @apply min-w-0 rounded-panel border p-[22px] shadow-card;
+    border-color: var(--line);
+    background: var(--surface);
+  }
+}

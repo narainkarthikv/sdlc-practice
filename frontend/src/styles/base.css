@@ -1,0 +1,21 @@
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    font-weight: 450;
+    font-synthesis: none;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html, body, #root { min-height: 100%; }
+  body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--canvas); color: var(--ink); transition: background-color 0.25s ease, color 0.25s ease; }
+  button, input, textarea, select { font: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+}
