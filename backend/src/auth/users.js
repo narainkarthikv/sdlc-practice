@@ -4,6 +4,7 @@ import { z } from "zod";
 import { query } from "../db.js";
 
 const defaultSaltRounds = 10;
+const sessionDurationHours = 6;
 
 export const signupSchema = z.object({
   displayName: z.string().trim().min(1).max(120),
@@ -37,6 +38,23 @@ function mapUser(row) {
   };
 }
 
+async function createSession(userId) {
+  const sessionId = randomUUID();
+  const result = await query(
+    `
+      insert into user_sessions (id, user_id, expires_at)
+      values ($1, $2, now() + ($3 * interval '1 hour'))
+      returning id, expires_at
+    `,
+    [sessionId, userId, sessionDurationHours]
+  );
+
+  return {
+    sessionId: result.rows[0].id,
+    expiresAt: new Date(result.rows[0].expires_at).toISOString()
+  };
+}
+
 export async function getUserById(id) {
   const result = await query(
     "select id, display_name, email, created_at, updated_at from users where id = $1",
@@ -66,10 +84,7 @@ export async function signupUser(payload) {
     [userId, data.displayName, data.email, passwordHash]
   );
 
-  return {
-    user: mapUser(result.rows[0]),
-    sessionId: randomUUID()
-  };
+  return { user: mapUser(result.rows[0]), ...(await createSession(userId)) };
 }
 
 export async function loginUser(payload) {
@@ -89,8 +104,5 @@ export async function loginUser(payload) {
     throw createHttpError(401, "Invalid email or password");
   }
 
-  return {
-    user: mapUser(userRow),
-    sessionId: randomUUID()
-  };
+  return { user: mapUser(userRow), ...(await createSession(userRow.id)) };
 }

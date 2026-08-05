@@ -17,7 +17,15 @@ function loadAuthState(): AuthState | undefined {
     }
 
     const parsed = JSON.parse(raw) as AuthState;
-    if (!parsed || typeof parsed !== "object") {
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      !parsed.user ||
+      !parsed.sessionId ||
+      !parsed.expiresAt ||
+      Date.parse(parsed.expiresAt) <= Date.now()
+    ) {
+      window.localStorage.removeItem(authStorageKey);
       return undefined;
     }
 

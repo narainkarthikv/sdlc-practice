@@ -116,7 +116,7 @@ export default function Dashboard() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [insightsOpen, setInsightsOpen] = useState(false);
 
-  const userId = currentUser?.id;
+  const sessionId = useAppSelector((state) => state.auth.sessionId);
 
   useEffect(() => {
     document.title = "Workspace | Todoist SDLC";
@@ -138,15 +138,15 @@ export default function Dashboard() {
   }, [insightsOpen]);
 
   useEffect(() => {
-    if (userId) void loadTasks();
-  }, [userId]);
+    if (sessionId) void loadTasks();
+  }, [sessionId]);
 
   async function loadTasks() {
-    if (!userId) return;
+    if (!sessionId) return;
     setLoading(true);
     setError(null);
     try {
-      setTasks(await fetchTasks(userId));
+      setTasks(await fetchTasks(sessionId));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load tasks");
     } finally {
@@ -186,7 +186,7 @@ export default function Dashboard() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!userId) return;
+    if (!sessionId) return;
     setSaving(true);
     setError(null);
     try {
@@ -196,10 +196,10 @@ export default function Dashboard() {
         description: taskForm.description?.trim() || ""
       };
       if (editingId) {
-        const updated = await updateTask(userId, editingId, payload);
+        const updated = await updateTask(sessionId, editingId, payload);
         setTasks((current) => current.map((task) => (task.id === editingId ? updated : task)));
       } else {
-        const created = await createTask(userId, payload);
+        const created = await createTask(sessionId, payload);
         setTasks((current) => [created, ...current]);
       }
       resetForm();
@@ -211,11 +211,11 @@ export default function Dashboard() {
   }
 
   async function handleDelete(id: string) {
-    if (!userId) return;
+    if (!sessionId) return;
     setSaving(true);
     setError(null);
     try {
-      await deleteTask(userId, id);
+      await deleteTask(sessionId, id);
       setTasks((current) => current.filter((task) => task.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete task");
@@ -247,7 +247,7 @@ export default function Dashboard() {
   }
 
   async function generateSummaries() {
-    if (!userId) return;
+    if (!sessionId) return;
     setSummaryLoading(true);
     setError(null);
     try {

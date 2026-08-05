@@ -4,11 +4,13 @@ import type { AuthSession } from "../../types";
 export type AuthState = {
   user: AuthSession["user"] | null;
   sessionId: string | null;
+  expiresAt: string | null;
 };
 
 const initialState: AuthState = {
   user: null,
-  sessionId: null
+  sessionId: null,
+  expiresAt: null
 };
 
 const authSlice = createSlice({
@@ -18,10 +20,12 @@ const authSlice = createSlice({
     setCredentials(state, action: PayloadAction<AuthSession>) {
       state.user = action.payload.user;
       state.sessionId = action.payload.sessionId;
+      state.expiresAt = action.payload.expiresAt;
     },
     logout(state) {
       state.user = null;
       state.sessionId = null;
+      state.expiresAt = null;
     }
   }
 });

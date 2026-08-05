@@ -48,6 +48,7 @@ export type AuthUser = {
 export type AuthSession = {
   user: AuthUser;
   sessionId: string;
+  expiresAt: string;
 };
 
 export type SignupInput = {

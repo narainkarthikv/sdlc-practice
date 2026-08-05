@@ -11,6 +11,17 @@ CREATE TABLE IF NOT EXISTS users (
 -- Create index for email lookups
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
+-- Six-hour server-side sessions
+CREATE TABLE IF NOT EXISTS user_sessions (
+  id UUID PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
+
 -- Create tasks table
 CREATE TABLE IF NOT EXISTS tasks (
   id UUID PRIMARY KEY,

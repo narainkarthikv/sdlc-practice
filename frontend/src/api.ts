@@ -24,6 +24,10 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
     }
   });
 
+  if (response.status === 401) {
+    window.dispatchEvent(new Event("auth:expired"));
+  }
+
   if (!response.ok) {
     const message = await response.text();
     throw new Error(message || `Request failed with status ${response.status}`);
@@ -41,38 +45,38 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   return JSON.parse(text) as T;
 }
 
-function buildUserHeaders(userId: string) {
+function buildSessionHeaders(sessionId: string) {
   return {
-    "x-user-id": userId
+    "x-session-id": sessionId
   };
 }
 
-export function fetchTasks(userId: string): Promise<Task[]> {
+export function fetchTasks(sessionId: string): Promise<Task[]> {
   return requestJson<Task[]>(`${apiBaseUrl}/tasks`, {
-    headers: buildUserHeaders(userId)
+    headers: buildSessionHeaders(sessionId)
   });
 }
 
-export function createTask(userId: string, payload: TaskInput): Promise<Task> {
+export function createTask(sessionId: string, payload: TaskInput): Promise<Task> {
   return requestJson<Task>(`${apiBaseUrl}/tasks`, {
     method: "POST",
-    headers: buildUserHeaders(userId),
+    headers: buildSessionHeaders(sessionId),
     body: JSON.stringify(requireJsonBody(payload, "Create task"))
   });
 }
 
-export function updateTask(userId: string, id: string, payload: Partial<TaskInput>): Promise<Task> {
+export function updateTask(sessionId: string, id: string, payload: Partial<TaskInput>): Promise<Task> {
   return requestJson<Task>(`${apiBaseUrl}/tasks/${id}`, {
     method: "PATCH",
-    headers: buildUserHeaders(userId),
+    headers: buildSessionHeaders(sessionId),
     body: JSON.stringify(requireJsonBody(payload, "Update task"))
   });
 }
 
-export function deleteTask(userId: string, id: string): Promise<void> {
+export function deleteTask(sessionId: string, id: string): Promise<void> {
   return requestJson<void>(`${apiBaseUrl}/tasks/${id}`, {
     method: "DELETE",
-    headers: buildUserHeaders(userId)
+    headers: buildSessionHeaders(sessionId)
   });
 }
 
