@@ -80,6 +80,14 @@ export function deleteTask(sessionId: string, id: string): Promise<void> {
   });
 }
 
+export function deleteTasks(sessionId: string, ids: string[]): Promise<{deleted:number}> {
+  return requestJson<{deleted:number}>(`${apiBaseUrl}/tasks/bulk-delete`, {
+    method: "POST",
+    headers: buildSessionHeaders(sessionId),
+    body: JSON.stringify({ ids })
+  });
+}
+
 export function fetchProductivitySummary(
   period: SummaryPeriod,
   tasks: Task[]

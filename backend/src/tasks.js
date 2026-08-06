@@ -125,6 +125,16 @@ export async function deleteTask(userId, id) {
   return result.rowCount > 0;
 }
 
+export async function deleteTasks(userId, ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return 0;
+  // delete only tasks owned by the user and return number deleted
+  const result = await query(
+    `delete from tasks where owner_id = $1 and id = any($2::uuid[]) returning id`,
+    [userId, ids]
+  );
+  return result.rowCount;
+}
+
 export async function taskStats(userId) {
   const result = await query(`
     select

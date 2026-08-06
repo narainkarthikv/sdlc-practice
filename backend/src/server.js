@@ -7,7 +7,7 @@ import { closeDb, ensureDbConnection } from "./db.js";
 import { requireUser } from "./auth/requireUser.js";
 import { requireServiceCaller } from "./auth/serviceAuth.js";
 import { loginUser, signupUser } from "./auth/users.js";
-import { createTask, deleteTask, getTask, listTasks, taskStats, updateTask } from "./tasks.js";
+import { createTask, deleteTask, deleteTasks, getTask, listTasks, taskStats, updateTask } from "./tasks.js";
 
 const app = express();
 const port = Number(process.env.PORT || 8080);
@@ -145,6 +145,21 @@ app.delete("/tasks/:id", async (req, res, next) => {
       return res.status(404).json({ message: "Task not found" });
     }
     return res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Bulk delete endpoint — accepts { ids: string[] } in the body and deletes tasks owned by the authenticated user
+app.post("/tasks/bulk-delete", async (req, res, next) => {
+  try {
+    const user = await requireUser(req);
+    const ids = req.body && req.body.ids;
+    if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) {
+      return res.status(400).json({ message: "ids must be an array of task id strings" });
+    }
+    const deletedCount = await deleteTasks(user.id, ids);
+    return res.json({ deleted: deletedCount });
   } catch (error) {
     next(error);
   }

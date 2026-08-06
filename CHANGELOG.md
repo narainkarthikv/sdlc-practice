@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Planned changes will be recorded here before the next release.
 
+## [1.2.0] - 2026-08-06
+
+This backward-compatible minor release improves task workflow controls, session
+handling, and the AI agents used for productivity insights.
+
+### Added
+
+- **Bulk task actions**: authenticated bulk deletion for selected tasks, scoped
+  to the owning user.
+- **Task filters**: separate completion and priority filters that can be used
+  together, plus task sorting and selection controls.
+
+### Changed
+
+- Refined the dashboard task toolbar into a responsive SaaS-style control group
+  with conditional danger actions and clearer task counts.
+- Improved session-aware authentication flow and expiration handling across the
+  frontend and backend.
+- Strengthened agent prompting with product-specific prioritization rules,
+  explicit date and period semantics, prompt-injection boundaries, concise
+  plain-language output, and grounded recommendations.
+- Added deterministic task facts and stricter response normalization so summary
+  output remains useful and compatible with the JSON API contracts.
+
 ## [1.1.0] - 2026-08-03
 
 This release covers the coordinated frontend, backend, and agents work delivered
@@ -100,3 +124,4 @@ release and does not currently publish an npm package.
 
 - **1.0.0** - Initial production release (2024-07-08)
 - **1.1.0** - Coordinated frontend, backend, and agents feature release (2026-08-03)
+- **1.2.0** - Task workflow, session handling, and AI agent improvements (2026-08-06)

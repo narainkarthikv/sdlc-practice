@@ -4,6 +4,7 @@ import { logout } from "../auth/authSlice";
 import {
   createTask,
   deleteTask,
+  deleteTasks,
   fetchProductivitySummary,
   fetchTaskSummary,
   fetchTasks,
@@ -47,7 +48,8 @@ const periodLabels: Record<SummaryPeriod, string> = {
   year: "This year"
 };
 
-type TaskFilter = "all" | TaskStatus | "high_priority" | "low_priority";
+type StatusFilter = "all" | TaskStatus;
+type PriorityFilter = "all" | TaskPriority;
 type Theme = "light" | "dark";
 
 function formatDate(value: string | null): string {
@@ -108,7 +110,8 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<SummaryPeriod>("day");
-  const [filter, setFilter] = useState<TaskFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [productivitySummary, setProductivitySummary] = useState<ProductivitySummaryResponse | null>(null);
   const [taskSummary, setTaskSummary] = useState<TaskSummaryResponse | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -117,6 +120,10 @@ export default function Dashboard() {
   const [insightsOpen, setInsightsOpen] = useState(false);
 
   const sessionId = useAppSelector((state) => state.auth.sessionId);
+  // selection and sorting state for multi-select / bulk actions
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState<'updatedAt'|'createdAt'|'dueDate'|'priority'|'title'>('updatedAt');
+  const [sortDir, setSortDir] = useState<'desc'|'asc'>('desc');
 
   useEffect(() => {
     document.title = "Workspace | Todoist SDLC";
@@ -165,19 +172,41 @@ export default function Dashboard() {
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
-    switch (filter) {
-      case "todo":
-      case "in_progress":
-      case "done":
-        return tasks.filter((task) => task.status === filter);
-      case "high_priority":
-        return tasks.filter((task) => task.priority === "high");
-      case "low_priority":
-        return tasks.filter((task) => task.priority === "low");
-      default:
-        return tasks;
-    }
-  }, [filter, tasks]);
+    return tasks.filter((task) => (
+      (statusFilter === "all" || task.status === statusFilter) &&
+      (priorityFilter === "all" || task.priority === priorityFilter)
+    ));
+  }, [priorityFilter, statusFilter, tasks]);
+
+  const sortedTasks = useMemo(() => {
+    const arr = [...filteredTasks];
+    const dir = sortDir === 'asc' ? 1 : -1;
+    arr.sort((a, b) => {
+      try {
+        switch (sortBy) {
+          case 'createdAt':
+            return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * dir;
+          case 'dueDate': {
+            const ta = a.dueDate ? new Date(a.dueDate).getTime() : 0;
+            const tb = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+            return (ta - tb) * dir;
+          }
+          case 'priority': {
+            const order = { high: 3, medium: 2, low: 1 } as Record<string, number>;
+            return (order[a.priority] - order[b.priority]) * dir;
+          }
+          case 'title':
+            return a.title.localeCompare(b.title) * dir;
+          case 'updatedAt':
+          default:
+            return (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()) * dir;
+        }
+      } catch (e) {
+        return 0;
+      }
+    });
+    return arr;
+  }, [filteredTasks, sortBy, sortDir]);
 
   const periodTasks = useMemo(
     () => tasks.filter((task) => isTaskInPeriod(task, period)),
@@ -271,12 +300,17 @@ export default function Dashboard() {
 
   if (!currentUser) return null;
 
-  const filterButtons: Array<{ label: string; value: TaskFilter }> = [
-    { label: "All tasks", value: "all" },
+  const statusFilters: Array<{ label: string; value: StatusFilter }> = [
+    { label: "All statuses", value: "all" },
     { label: "To do", value: "todo" },
     { label: "In progress", value: "in_progress" },
-    { label: "Completed", value: "done" },
-    { label: "High priority", value: "high_priority" }
+    { label: "Completed", value: "done" }
+  ];
+  const priorityFilters: Array<{ label: string; value: PriorityFilter }> = [
+    { label: "All priorities", value: "all" },
+    { label: "Low", value: "low" },
+    { label: "Medium", value: "medium" },
+    { label: "High", value: "high" }
   ];
 
   return (
@@ -365,10 +399,76 @@ export default function Dashboard() {
                 </div>
               </form>
 
-              <div className="queue-toolbar"><div className="filter-tabs">{filterButtons.map((button) => <button key={button.value} className={filter === button.value ? "filter-tab filter-tab-active" : "filter-tab"} onClick={() => setFilter(button.value)}>{button.label}{button.value === "all" ? <span>{tasks.length}</span> : null}</button>)}</div><span className="queue-count">{filteredTasks.length} {filteredTasks.length === 1 ? "task" : "tasks"}</span></div>
+              <div className="queue-toolbar">
+                <div className="queue-toolbar-main">
+                  <label className="select-all" title="Select all visible tasks">
+                    <input type="checkbox" aria-label="Select all visible" checked={filteredTasks.length > 0 && filteredTasks.every((t) => selectedIds.has(t.id))} onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedIds(new Set(filteredTasks.map((t) => t.id)));
+                      } else {
+                        setSelectedIds(new Set());
+                      }
+                    }} />
+                    <span>Select all</span>
+                  </label>
+                  <label className="toolbar-select filter-control">
+                    <span>Completion</span>
+                    <select aria-label="Filter by completion" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
+                      {statusFilters.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="toolbar-select filter-control">
+                    <span>Priority</span>
+                    <select aria-label="Filter by priority" value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}>
+                      {priorityFilters.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="toolbar-select sort-control">
+                    <span>Sort</span>
+                    <select aria-label="Sort tasks" value={`${sortBy}:${sortDir}`} onChange={(e) => {
+                      const [s, d] = String(e.target.value).split(":");
+                      setSortBy(s as any);
+                      setSortDir(d as 'asc'|'desc');
+                    }}>
+                      <option value="updatedAt:desc">Recent</option>
+                      <option value="updatedAt:asc">Oldest</option>
+                      <option value="dueDate:asc">Due soon</option>
+                      <option value="dueDate:desc">Due latest</option>
+                      <option value="priority:desc">Priority</option>
+                      <option value="title:asc">Title</option>
+                    </select>
+                  </label>
+                </div>
+                <span className="queue-count">{filteredTasks.length} {filteredTasks.length === 1 ? "task" : "tasks"}</span>
+                {selectedIds.size > 0 ? <div className="toolbar-actions">
+                  <button className="button button-danger" disabled={saving} onClick={async () => {
+                    if (!sessionId) return;
+                    if (selectedIds.size === 0) return;
+                    if (!window.confirm(`Delete ${selectedIds.size} selected task(s)? This cannot be undone.`)) return;
+                    setSaving(true);
+                    setError(null);
+                    try {
+                      const ids = Array.from(selectedIds);
+                      await deleteTasks(sessionId, ids);
+                      setTasks((current) => current.filter((t) => !selectedIds.has(t.id)));
+                      setSelectedIds(new Set());
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Failed to delete selected tasks");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}>Delete selected</button>
+                </div> : null}
+              </div>
 
               <div className="task-list">
-                {loading ? <div className="empty-state"><span className="loading-dot" /> Loading your tasks...</div> : tasks.length === 0 ? <div className="empty-state"><div className="empty-icon"><CheckIcon /></div><strong>Your queue is clear</strong><span>Create your first task above to get started.</span></div> : filteredTasks.length === 0 ? <div className="empty-state"><strong>No matching tasks</strong><span>Try another filter to see more of your work.</span></div> : filteredTasks.map((task) => <TaskCard key={task.id} task={task} theme={theme} onEdit={startEdit} onDelete={handleDelete} />)}
+                {loading ? <div className="empty-state"><span className="loading-dot" /> Loading your tasks...</div> : tasks.length === 0 ? <div className="empty-state"><div className="empty-icon"><CheckIcon /></div><strong>Your queue is clear</strong><span>Create your first task above to get started.</span></div> : filteredTasks.length === 0 ? <div className="empty-state"><strong>No matching tasks</strong><span>Try another filter to see more of your work.</span></div> : sortedTasks.map((task) => <TaskCard key={task.id} task={task} theme={theme} selected={selectedIds.has(task.id)} onToggle={(id) => {
+                  setSelectedIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(id)) next.delete(id); else next.add(id);
+                    return next;
+                  });
+                }} onEdit={startEdit} onDelete={handleDelete} />)}
               </div>
             </section>
 
@@ -398,8 +498,13 @@ function StatCard({ label, value, icon, tone }: { label: string; value: number; 
   return <article className={`stat-card stat-${tone}`}><div className="stat-top"><span>{label}</span><div className="stat-icon">{icon}</div></div><strong>{value}</strong></article>;
 }
 
-function TaskCard({ task, theme, onEdit, onDelete }: { task: Task; theme: Theme; onEdit: (task: Task) => void; onDelete: (id: string) => void }) {
-  return <article className={`task-row ${task.status === "done" ? "task-row-done" : ""}`}><div className={`task-check task-check-${task.status}`} aria-label={statusLabels[task.status]}>{task.status === "done" ? <CheckIcon /> : task.status === "in_progress" ? <span /> : null}</div><div className="task-row-main"><div className="task-row-title"><strong>{task.title}</strong><span className={`status-pill status-${task.status}`}>{statusLabels[task.status]}</span><span className={`priority-pill priority-${task.priority}`}><FlagIcon /> {priorityLabels[task.priority]}</span></div><p>{task.description || "No description added"}</p><span className="task-due"><CalendarIcon /> {formatDate(task.dueDate)}</span></div><div className="task-row-actions"><button onClick={() => onEdit(task)} aria-label={`Edit ${task.title}`}><EditIcon /></button><button className="delete-action" onClick={() => onDelete(task.id)} aria-label={`Delete ${task.title}`}><TrashIcon /></button></div></article>;
+function TaskCard({ task, theme, onEdit, onDelete, selected, onToggle }: { task: Task; theme: Theme; onEdit: (task: Task) => void; onDelete: (id: string) => void; selected: boolean; onToggle: (id: string) => void }) {
+  return <article className={`task-row ${task.status === "done" ? "task-row-done" : ""}`}>
+    <div className="task-select"><input type="checkbox" aria-label={`Select ${task.title}`} checked={!!selected} onChange={() => onToggle(task.id)} /></div>
+    <div className={`task-check task-check-${task.status}`} aria-label={statusLabels[task.status]}>{task.status === "done" ? <CheckIcon /> : task.status === "in_progress" ? <span /> : null}</div>
+    <div className="task-row-main"><div className="task-row-title"><strong>{task.title}</strong><span className={`status-pill status-${task.status}`}>{statusLabels[task.status]}</span><span className={`priority-pill priority-${task.priority}`}><FlagIcon /> {priorityLabels[task.priority]}</span></div><p>{task.description || "No description added"}</p><span className="task-due"><CalendarIcon /> {formatDate(task.dueDate)}</span></div>
+    <div className="task-row-actions"><button onClick={() => onEdit(task)} aria-label={`Edit ${task.title}`}><EditIcon /></button><button className="delete-action" onClick={() => onDelete(task.id)} aria-label={`Delete ${task.title}`}><TrashIcon /></button></div>
+  </article>;
 }
 
 function SummaryCard({ title, body, bullets, secondary, tertiary }: { title: string; body: string; bullets: string[]; secondary: string[]; tertiary: string[] }) {
