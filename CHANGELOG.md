@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Password show/hide toggle on login and signup to improve accessibility and reduce password entry errors.
+- Agents: more motivating and encouraging summary tone that highlights progress, suggests concrete next steps, and includes brief congratulatory messages when recent work is completed.
+
+### Changed
+
+- Frontend version bump to 1.2.1 for a patch release.
+
 Planned changes will be recorded here before the next release.
 
 ## [1.2.0] - 2026-08-06

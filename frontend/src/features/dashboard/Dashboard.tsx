@@ -213,6 +213,11 @@ export default function Dashboard() {
     [period, tasks]
   );
 
+  const overdueTasks = useMemo(() => {
+    const now = new Date();
+    return tasks.filter((task) => task.dueDate && task.status !== "done" && new Date(`${task.dueDate}T00:00:00`) < now);
+  }, [tasks]);
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!sessionId) return;
@@ -331,7 +336,7 @@ export default function Dashboard() {
           <div className="upgrade-card">
             <div className="upgrade-icon"><SparkIcon /></div>
             <strong>Make every week count</strong>
-            <span>Turn your task list into a clear plan with AI.</span>
+            <span>Turn your task list into a clear plan with Cue.</span>
           </div>
         </div>
       </aside>
@@ -341,7 +346,7 @@ export default function Dashboard() {
           <button className="mobile-menu" onClick={() => setMobileNavOpen(true)} aria-label="Open navigation"><MenuIcon /></button>
           <div className="topbar-actions">
             <button className="icon-button" onClick={toggleTheme} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}>{theme === "light" ? <MoonIcon /> : <SunIcon />}</button>
-            <button className={`icon-button insights-toggle ${insightsOpen ? "insights-toggle-active" : ""}`} onClick={() => setInsightsOpen((open) => !open)} aria-label={`${insightsOpen ? "Close" : "Open"} AI insights`} aria-pressed={insightsOpen}><SparkIcon /></button>
+            <button className={`icon-button insights-toggle ${insightsOpen ? "insights-toggle-active" : ""}`} onClick={() => setInsightsOpen((open) => !open)} aria-label={`${insightsOpen ? "Close" : "Open"} Cue`} aria-pressed={insightsOpen}><SparkIcon /></button>
             <div className="topbar-divider" />
             <div className="profile-menu">
               <button className="profile-button" onClick={() => setProfileOpen((open) => !open)} aria-label="Open profile" aria-expanded={profileOpen}><div className="avatar avatar-small">{getInitials(currentUser.displayName)}</div></button>
@@ -477,11 +482,52 @@ export default function Dashboard() {
           {insightsOpen ? <>
             <button className="insights-backdrop" onClick={() => setInsightsOpen(false)} aria-label="Close AI insights" />
             <aside className="insights-drawer" role="dialog" aria-modal="true" aria-labelledby="insights-title">
-              <div className="drawer-header"><div><p className="panel-kicker panel-kicker-purple">Powered by Gemini</p><h2 id="insights-title">AI insights</h2></div><button className="icon-button" onClick={() => setInsightsOpen(false)} aria-label="Close AI insights"><CloseIcon /></button></div>
-              <div className="insight-intro"><div className="insight-orb"><SparkIcon /></div><div><strong>See the bigger picture.</strong><p>Get a focused read on your workload and what to do next.</p></div></div>
-              <div className="period-selector"><span>Focus period</span><select value={period} onChange={(event) => setPeriod(event.target.value as SummaryPeriod)}>{Object.entries(periodLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
-              <button className="button insight-button" onClick={generateSummaries} disabled={summaryLoading || tasks.length === 0}><SparkIcon /> {summaryLoading ? "Analyzing your tasks..." : "Generate insights"}<ArrowIcon /></button>
-              <div className="summary-stack"><SummaryCard title={`Productivity · ${periodLabels[period]}`} body={productivitySummary?.summary ?? "Generate an insight to see your productivity outlook."} bullets={productivitySummary?.highlights ?? []} secondary={productivitySummary?.risks ?? []} tertiary={productivitySummary?.nextSteps ?? []} /><SummaryCard title="Task health" body={taskSummary?.summary ?? "Your task health summary will appear here."} bullets={taskSummary ? [`${taskSummary.breakdown.todo} to do`, `${taskSummary.breakdown.in_progress} in progress`, `${taskSummary.breakdown.done} completed`] : []} secondary={taskSummary?.blockers ?? []} tertiary={taskSummary?.recommendations ?? []} /></div>
+              <div className="drawer-header">
+                <div className="drawer-header-left">
+                  <h2 id="insights-title">Cue</h2>
+                  <p className="drawer-subtitle">Actionable, optimistic summaries to help you make progress.</p>
+                </div>
+                <div className="drawer-header-right">
+                  <label className="drawer-period"><span className="sr-only">Focus period</span>
+                    <select value={period} onChange={(event) => setPeriod(event.target.value as SummaryPeriod)} aria-label="Select focus period">
+                      {Object.entries(periodLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                  </label>
+                  <button className="icon-button" onClick={() => setInsightsOpen(false)} aria-label="Close Cue"><CloseIcon /></button>
+                </div>
+              </div>
+
+              <div className="insight-actions"><button className="button insight-button" onClick={generateSummaries} disabled={summaryLoading || tasks.length === 0}><SparkIcon /> {summaryLoading ? "Analyzing with Cue..." : "Generate Cue insights"}<ArrowIcon /></button></div>
+
+              {/* Overdue banner and section */}
+              {overdueTasks.length > 0 ? (
+                <div className="alert alert-error" role="alert" style={{ marginTop: 12 }}>
+                  <AlertIcon /> <div style={{ flex: 1 }}><strong>{`You have ${overdueTasks.length} overdue ${overdueTasks.length === 1 ? "task" : "tasks"}`}</strong><div style={{ marginTop: 6 }}>{overdueTasks.slice(0, 3).map((t) => <div key={t.id}>• {t.title} — due {formatDate(t.dueDate)}</div>)}</div></div>
+                </div>
+              ) : null}
+
+              <div className="summary-stack">
+                <SummaryCard title={`Productivity · ${periodLabels[period]}`} body={productivitySummary?.summary ?? "Generate an insight to see your productivity outlook."} bullets={productivitySummary?.highlights ?? []} secondary={productivitySummary?.risks ?? []} tertiary={productivitySummary?.nextSteps ?? []} />
+
+                {overdueTasks.length > 0 ? (
+                  <section className="status-block">
+                    <h4 className="status-title">Overdue</h4>
+                    <div className="overdue-list">
+                      {overdueTasks.map((task) => (
+                        <article key={task.id} className={`task-summary-card task-overdue`}>
+                          <div className="task-summary-main">
+                            <div className="task-summary-title"><strong>{task.title}</strong><Badge tone="warning">{priorityLabels[task.priority]}</Badge></div>
+                            <p className="task-summary-desc">{task.description || "No description"}</p>
+                          </div>
+                          <div className="task-summary-meta"><span className="task-due"><CalendarIcon /> {formatDate(task.dueDate)}</span></div>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+
+              </div>
             </aside>
           </> : null}
         </main>
@@ -513,6 +559,17 @@ function SummaryCard({ title, body, bullets, secondary, tertiary }: { title: str
 
 type IconProps = { size?: number };
 function Icon({ children, size = 18 }: IconProps & { children: ReactNode }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>; }
+
+function Badge({ children, tone = "default" }: { children: React.ReactNode; tone?: "default" | "success" | "warning" | "muted" }) {
+  const toneClasses: Record<string, string> = {
+    default: "bg-gray-100 text-gray-800",
+    success: "bg-green-100 text-green-800",
+    warning: "bg-yellow-100 text-yellow-800",
+    muted: "bg-gray-100 text-gray-500",
+  };
+  return <span className={`inline-flex items-center gap-2 px-2 py-0.5 rounded-full text-sm ${toneClasses[tone]}`} role="status">{children}</span>;
+}
+
 const CheckIcon = ({ size }: IconProps) => <Icon size={size}><path d="m5 12 4 4L19 6" /></Icon>;
 const PlusIcon = ({ size }: IconProps) => <Icon size={size}><path d="M12 5v14M5 12h14" /></Icon>;
 const GridIcon = ({ size }: IconProps) => <Icon size={size}><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><rect x="14" y="14" width="6" height="6" rx="1" /></Icon>;

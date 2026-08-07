@@ -224,11 +224,53 @@ body.dark .priority-low { background: #1c354c; color: #83c2f4; }
 .summary-section strong { color: var(--ink); font-size: 10px; }
 .summary-risk strong { color: var(--warning); }
 .insights-backdrop { position: fixed; inset: 0; z-index: 39; border: 0; background: rgba(5, 9, 19, 0.58); animation: fade-in 0.2s ease-out; }
-.insights-drawer { position: fixed; inset: 0 0 0 auto; z-index: 40; display: flex; width: min(440px, 100vw); flex-direction: column; overflow-y: auto; border-left: 1px solid var(--line); background: var(--surface); padding: 28px; box-shadow: -18px 0 50px rgba(0, 0, 0, 0.22); animation: drawer-in 0.24s ease-out; }
-.drawer-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
-.drawer-header h2 { margin: 5px 0 0; color: var(--ink); font-size: 22px; letter-spacing: -0.04em; }
-.insights-drawer .insight-intro { margin-top: 28px; }
-.insights-drawer .summary-stack { margin-top: 24px; }
+.insights-drawer { position: fixed; inset: 0 0 0 auto; z-index: 40; display: flex; width: min(520px, 100vw); flex-direction: column; overflow-y: auto; border-left: 1px solid var(--line); background: var(--surface); padding: 24px; box-shadow: -18px 0 50px rgba(0, 0, 0, 0.22); animation: drawer-in 0.24s ease-out; }
+.drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.drawer-header-left h2 { margin: 0; color: var(--ink); font-size: 20px; letter-spacing: -0.02em; }
+.drawer-subtitle { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.insights-drawer .insight-intro { margin-top: 18px; display:flex; gap:12px; align-items:center; }
+.insights-drawer .summary-stack { margin-top: 20px; display:grid; gap:14px; }
+
+/* Richer summary card visuals */
+.summary-card { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 16px; box-shadow: none; }
+.summary-card h3 { margin: 0 0 8px; font-size: 15px; }
+.summary-card p { margin: 0 0 12px; color: var(--ink); font-size: 14px; line-height: 1.45; }
+.summary-highlights { list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-direction: column; gap: 8px; }
+.summary-highlights li { display: flex; gap: 10px; align-items: flex-start; }
+.summary-highlights li span { display: inline-grid; width: 18px; height: 18px; place-items: center; border-radius: 6px; background: color-mix(in srgb, var(--surface) 60%, transparent); color: var(--brand); border: 1px solid var(--line); }
+.summary-section { display: flex; flex-direction: column; gap: 8px; }
+.summary-section strong { font-size: 13px; margin-bottom: 4px; }
+.summary-section > span { display: inline-block; background: var(--surface-muted); padding: 8px 10px; border-radius: 8px; color: var(--muted); font-size: 13px; }
+.insight-button { margin-top: 12px; }
+@media (max-width: 700px) {
+  .insights-drawer { width: 100vw; padding: 18px; }
+  .summary-card { padding: 14px; }
+}
+
+/* status blocks and task summary cards */
+.status-blocks { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 6px; }
+.status-block { border-top: 1px dashed var(--line); padding-top: 12px; }
+.status-title { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.status-empty { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+.task-summary-card { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; padding: 10px; border-radius: 10px; background: color-mix(in srgb, var(--surface) 96%, transparent); border: 1px solid var(--line); }
+.task-summary-card.task-done { opacity: 0.8; }
+.task-summary-title { display: flex; gap: 10px; align-items: center; }
+.task-summary-desc { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.task-summary-meta { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
+.drawer-period select { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+.drawer-header-right { display: flex; gap: 8px; align-items: center; }
+.sr-only { position: absolute !important; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px); white-space: nowrap; }
+.other-tasks { margin-top: 8px; display: grid; gap: 8px; }
+.other-title { margin: 8px 0 6px; color: var(--muted); font-size: 13px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 999px; font-size: 12px; }
+
+/* Overdue specific styles */
+.task-summary-card.task-overdue { border-color: color-mix(in srgb, var(--danger) 20%, var(--line)); background: color-mix(in srgb, var(--danger-soft) 6%, transparent); }
+.alert { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; border: 1px solid; border-radius: 9px; padding: 11px 13px; font-size: 13px; }
+.alert svg { width: 18px; }
+.alert span { flex: 1; }
+.alert-error { border-color: color-mix(in srgb, var(--danger) 30%, transparent); background: color-mix(in srgb, var(--danger-soft) 8%, transparent); color: var(--danger); }
+
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes drawer-in { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
 
@@ -268,6 +310,12 @@ body.dark .priority-low { background: #1c354c; color: #83c2f4; }
 .auth-field input { width: 100%; border: 1px solid var(--line); border-radius: 8px; outline: 0; background: var(--surface); color: var(--ink); padding: 12px 13px; font-size: 14px; transition: border 0.2s ease, box-shadow 0.2s ease; }
 .auth-field input::placeholder { color: var(--faint); }
 .auth-field input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 12%, transparent); }
+/* Password field: place the show/hide icon inside the input on the right */
+.auth-field .password-input-row { position: relative; }
+.auth-field .password-input-row input { padding-right: 44px; }
+.auth-field .password-input-row .password-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: transparent; padding: 6px; display: grid; place-items: center; color: var(--faint); }
+.auth-field .password-input-row .password-toggle:hover { color: var(--ink); }
+.auth-field .password-input-row .password-toggle svg { width: 18px; }
 .auth-submit { width: 100%; margin-top: 3px; padding: 12px; }
 .auth-error { margin-top: 15px; }
 .auth-switch-copy { margin: 21px 0 0; color: var(--muted); font-size: 13px; line-height: 1.6; }

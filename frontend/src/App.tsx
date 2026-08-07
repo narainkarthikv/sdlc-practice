@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "./app/hooks";
 import AuthScreen from "./features/auth/AuthScreen";
 import Dashboard from "./features/dashboard/Dashboard";
@@ -27,7 +28,13 @@ function App() {
     return () => window.removeEventListener("auth:expired", handleExpired);
   }, [dispatch]);
 
-  return currentUser ? <Dashboard /> : <AuthScreen />;
+  return (
+    <Routes>
+      <Route path="/" element={currentUser ? <Navigate to="/app" replace /> : <AuthScreen />} />
+      <Route path="/app" element={currentUser ? <Dashboard /> : <Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to={currentUser ? "/app" : "/"} replace />} />
+    </Routes>
+  );
 }
 
 export default App;
