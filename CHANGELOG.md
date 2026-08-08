@@ -9,12 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Password show/hide toggle on login and signup to improve accessibility and reduce password entry errors.
-- Agents: more motivating and encouraging summary tone that highlights progress, suggests concrete next steps, and includes brief congratulatory messages when recent work is completed.
+- Floating Action Button (FAB) on the dashboard to open the Spotlight.
+- Spotlight (Ctrl/Cmd+K) global feature listing app capabilities with icons and actions:
+  - Keyboard navigation (↑/↓ to move, Enter to activate, Esc to close).
+  - Type-to-filter, mouse interaction, and accessible roles (listbox/option).
+  - Built-in actions: focus composer, open Cue (AI insights), toggle theme, open profile, and bulk-delete placeholder.
 
 ### Changed
 
-- Frontend version bump to 1.2.1 for a patch release.
+- Frontend version bumped: 1.2.1 → 1.2.2
+- Backend version bumped: 1.2.0 → 1.2.1
+
+- **Dashboard UI**: compacted greeting card and card-grid spacing to reduce vertical whitespace and improve information density.
+- **Layout change**: greeting is left-aligned while the stats and "Today at a glance" are vertically stacked on the right column to improve visual balance.
+- **Stat cards**: refactored to a horizontal `Icon – label – count` layout for clearer, denser summaries.
+- **Greeting enhancements**: added contextual lines (`Next due`, `High priority`) inside the greeting panel (left-aligned) to provide more actionable information; removed the standalone suggestion placeholder.
 
 Planned changes will be recorded here before the next release.
 

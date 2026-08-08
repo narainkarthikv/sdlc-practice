@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useRef, type FormEvent, type ReactNode } from "react";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { logout } from "../auth/authSlice";
 import {
@@ -66,6 +66,14 @@ function formatToday(): string {
   }).format(new Date());
 }
 
+function timeOfDayGreeting(date = new Date()): string {
+  const hour = date.getHours();
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  if (hour >= 17 && hour < 21) return 'Good evening';
+  return 'Good night';
+}
+
 function getPeriodWindowDays(period: SummaryPeriod): number {
   switch (period) {
     case "day": return 1;
@@ -118,6 +126,64 @@ export default function Dashboard() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [insightsOpen, setInsightsOpen] = useState(false);
+  const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const [spotlightQuery, setSpotlightQuery] = useState("");
+
+  const [spotlightIndex, setSpotlightIndex] = useState<number>(0);
+  const spotlightInputRef = useRef<HTMLInputElement | null>(null);
+  const spotlightListRef = useRef<HTMLUListElement | null>(null);
+
+  const features = useMemo(() => [
+    { id: 'create', icon: 'plus', title: 'Create task', desc: 'Quickly add a new task from the composer', action: () => { const el = document.getElementById('task-composer') as HTMLInputElement | null; el?.focus(); } },
+    { id: 'filter', icon: 'filter', title: 'Filter & Sort', desc: 'Filter by status or priority and sort your tasks', action: () => { const el = document.querySelector('.toolbar-select select') as HTMLElement | null; el?.focus(); } },
+    { id: 'insights', icon: 'spark', title: 'Cue (AI insights)', desc: 'Generate productivity summaries and suggestions', action: () => setInsightsOpen(true) },
+    { id: 'theme', icon: 'moon', title: 'Toggle theme', desc: 'Switch between light and dark modes', action: () => toggleTheme() },
+    { id: 'profile', icon: 'logout', title: 'Profile & Sign out', desc: 'Open profile menu and sign out', action: () => { setProfileOpen(true); } },
+    { id: 'delete', icon: 'trash', title: 'Bulk delete', desc: 'Delete selected tasks in bulk', action: () => { /* Use toolbar actions for bulk operations */ } },
+  ], [toggleTheme]);
+
+  const filteredFeatures = useMemo(() => {
+    const q = spotlightQuery.trim().toLowerCase();
+    if (!q) return features;
+    return features.filter((f) => f.title.toLowerCase().includes(q) || f.desc.toLowerCase().includes(q));
+  }, [features, spotlightQuery]);
+
+  useEffect(() => {
+    if (spotlightOpen) {
+      setSpotlightIndex(0);
+      setTimeout(() => spotlightInputRef.current?.focus(), 0);
+    }
+  }, [spotlightOpen, filteredFeatures]);
+
+  useEffect(() => {
+    function globalKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setSpotlightOpen((open) => !open);
+        setTimeout(() => spotlightInputRef.current?.focus(), 0);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setSpotlightOpen(false);
+        return;
+      }
+      if (!spotlightOpen) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSpotlightIndex((i) => Math.min(i + 1, Math.max(0, filteredFeatures.length - 1)));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSpotlightIndex((i) => Math.max(0, i - 1));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const f = filteredFeatures[spotlightIndex];
+        if (f) { f.action?.(); setSpotlightOpen(false); }
+      }
+    }
+    window.addEventListener('keydown', globalKey);
+    return () => window.removeEventListener('keydown', globalKey);
+  }, [spotlightOpen, filteredFeatures, spotlightIndex]);
 
   const sessionId = useAppSelector((state) => state.auth.sessionId);
   // selection and sorting state for multi-select / bulk actions
@@ -217,6 +283,16 @@ export default function Dashboard() {
     const now = new Date();
     return tasks.filter((task) => task.dueDate && task.status !== "done" && new Date(`${task.dueDate}T00:00:00`) < now);
   }, [tasks]);
+
+  const nextDueTask = useMemo(() => {
+    const arr = tasks
+      .filter((t) => t.dueDate && t.status !== "done")
+      .slice()
+      .sort((a, b) => new Date(`${a.dueDate}T00:00:00`).getTime() - new Date(`${b.dueDate}T00:00:00`).getTime());
+    return arr.length ? arr[0] : null;
+  }, [tasks]);
+
+  const highPriorityCount = useMemo(() => tasks.filter((t) => t.priority === "high" && t.status !== "done").length, [tasks]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -363,25 +439,38 @@ export default function Dashboard() {
               <section className="greeting-card page-heading">
                 <div>
                   <p className="eyebrow">{formatToday()}</p>
-                  <h1>Good morning, {currentUser.displayName.split(" ")[0]} <span className="heading-wave">✦</span></h1>
+                  <h1>{timeOfDayGreeting()} , {currentUser.displayName.split(" ")[0]} <span className="heading-wave">✦</span></h1>
                   <p className="page-subtitle">Here is what is happening across your workspace today.</p>
                 </div>
-              </section>
-              <section className="glance-card">
-                <div className="greeting-footer">
-                <div className="greeting-footer-heading"><span>Today at a glance</span><strong>{stats.total ? `${Math.round((stats.done / stats.total) * 100)}% complete` : "Ready to begin"}</strong></div>
-                <div className="greeting-progress"><span style={{ width: `${stats.total ? Math.round((stats.done / stats.total) * 100) : 0}%` }} /></div>
-                <div className="greeting-meta"><span><i className="greeting-dot greeting-dot-brand" />{stats.inProgress} in progress</span><span><i className="greeting-dot greeting-dot-success" />{stats.done} completed</span><span>{stats.overdue ? `${stats.overdue} overdue` : "No overdue tasks"}</span></div>
+                <div className="greeting-extra">
+                  <div className="greeting-extra-item">
+                    <span className="greeting-extra-label">Next due</span>
+                    <strong className="greeting-extra-count">{nextDueTask ? `${nextDueTask.title} • ${formatDate(nextDueTask.dueDate)}` : 'No upcoming tasks'}</strong>
+                  </div>
+                  <div className="greeting-extra-item">
+                    <span className="greeting-extra-label">High priority</span>
+                    <strong className="greeting-extra-count">{highPriorityCount} task{highPriorityCount !== 1 ? 's' : ''}</strong>
+                  </div>
                 </div>
               </section>
             </div>
 
-            <section className="stats-grid" aria-label="Task overview">
-              <StatCard label="Total tasks" value={stats.total} icon={<GridIcon />} tone="blue" />
-              <StatCard label="Completed" value={stats.done} icon={<CheckIcon />} tone="green" />
-              <StatCard label="In progress" value={stats.inProgress} icon={<ClockIcon />} tone="orange" />
-              <StatCard label="Overdue" value={stats.overdue} icon={<AlertIcon />} tone="red" />
-            </section>
+            <div className="right-stack">
+              <section className="stats-grid" aria-label="Task overview">
+                <StatCard label="Total tasks" value={stats.total} icon={<GridIcon />} tone="blue" />
+                <StatCard label="Completed" value={stats.done} icon={<CheckIcon />} tone="green" />
+                <StatCard label="In progress" value={stats.inProgress} icon={<ClockIcon />} tone="orange" />
+                <StatCard label="Overdue" value={stats.overdue} icon={<AlertIcon />} tone="red" />
+              </section>
+
+              <section className="glance-card">
+                <div className="greeting-footer">
+                  <div className="greeting-footer-heading"><span>Today at a glance</span><strong>{stats.total ? `${Math.round((stats.done / stats.total) * 100)}% complete` : "Ready to begin"}</strong></div>
+                  <div className="greeting-progress"><span style={{ width: `${stats.total ? Math.round((stats.done / stats.total) * 100) : 0}%` }} /></div>
+                  <div className="greeting-meta"><span><i className="greeting-dot greeting-dot-brand" />{stats.inProgress} in progress</span><span><i className="greeting-dot greeting-dot-success" />{stats.done} completed</span><span>{stats.overdue ? `${stats.overdue} overdue` : "No overdue tasks"}</span></div>
+                </div>
+              </section>
+            </div>
           </section>
 
           <div className="dashboard-grid">
@@ -530,6 +619,31 @@ export default function Dashboard() {
               </div>
             </aside>
           </> : null}
+
+          {/* Spotlight modal and FAB */}
+          {spotlightOpen ? <>
+            <button className="spotlight-backdrop" onClick={() => setSpotlightOpen(false)} aria-label="Close spotlight" />
+            <div className="spotlight-modal" role="dialog" aria-modal="true" aria-label="Spotlight search">
+              <div className="spotlight-header">
+                <input ref={spotlightInputRef} autoFocus className="spotlight-input" placeholder="Search features (Ctrl+K)" value={spotlightQuery} onChange={(e) => { setSpotlightQuery(e.target.value); setSpotlightIndex(0); }} />
+                <button className="icon-button" onClick={() => setSpotlightOpen(false)} aria-label="Close spotlight"><CloseIcon /></button>
+              </div>
+              <ul className="spotlight-list" role="listbox" aria-label="Available features" ref={spotlightListRef}>
+                {filteredFeatures.map((f, idx) => (
+                  <li key={f.id} role="option" aria-selected={idx === spotlightIndex} tabIndex={0} className={`spotlight-item ${idx === spotlightIndex ? 'selected' : ''}`} onClick={() => { f.action?.(); setSpotlightOpen(false); }} onMouseEnter={() => setSpotlightIndex(idx)}>
+                    <div className="feat-icon" aria-hidden>{getFeatureIcon(f.icon)}</div>
+                    <div className="feat-body"><strong>{f.title}</strong><span>{f.desc}</span></div>
+                  </li>
+                ))}
+              </ul>
+              <div className="spotlight-footer">Use ↑/↓ and Enter to navigate · Esc to close</div>
+            </div>
+          </> : null}
+
+          <button className="fab" onClick={() => { setSpotlightOpen((s) => !s); setTimeout(() => spotlightInputRef.current?.focus(), 0); }} aria-label="Open spotlight">
+            <span className="fab-icon"><PlusIcon /></span>
+          </button>
+
         </main>
       </div>
     </div>
@@ -541,7 +655,15 @@ function getInitials(name: string): string {
 }
 
 function StatCard({ label, value, icon, tone }: { label: string; value: number; icon: ReactNode; tone: string }) {
-  return <article className={`stat-card stat-${tone}`}><div className="stat-top"><span>{label}</span><div className="stat-icon">{icon}</div></div><strong>{value}</strong></article>;
+  return (
+    <article className={`stat-card stat-${tone}`}>
+      <div className="stat-left">
+        <div className="stat-icon">{icon}</div>
+        <div className="stat-label">{label}</div>
+      </div>
+      <strong className="stat-value">{value}</strong>
+    </article>
+  );
 }
 
 function TaskCard({ task, theme, onEdit, onDelete, selected, onToggle }: { task: Task; theme: Theme; onEdit: (task: Task) => void; onDelete: (id: string) => void; selected: boolean; onToggle: (id: string) => void }) {
@@ -589,3 +711,15 @@ const AlertIcon = ({ size }: IconProps) => <Icon size={size}><path d="M12 4 3 20
 const LogoutIcon = ({ size }: IconProps) => <Icon size={size}><path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-5" /></Icon>;
 const MenuIcon = ({ size }: IconProps) => <Icon size={size}><path d="M4 6h16M4 12h16M4 18h16" /></Icon>;
 const CloseIcon = ({ size }: IconProps) => <Icon size={size}><path d="m6 6 12 12M18 6 6 18" /></Icon>;
+
+function getFeatureIcon(key: string) {
+  switch (key) {
+    case 'plus': return <PlusIcon />;
+    case 'filter': return <FlagIcon />;
+    case 'spark': return <SparkIcon />;
+    case 'moon': return <MoonIcon />;
+    case 'logout': return <LogoutIcon />;
+    case 'trash': return <TrashIcon />;
+    default: return <SettingsIcon />;
+  }
+}
