@@ -11,6 +11,7 @@ import {
   updateTask
 } from "../../api";
 import { useTheme } from "../../theme/ThemeProvider";
+import { Button } from "../../components/ui/Button";
 import type {
   ProductivitySummaryResponse,
   SummaryPeriod,
@@ -50,7 +51,6 @@ const periodLabels: Record<SummaryPeriod, string> = {
 
 type StatusFilter = "all" | TaskStatus;
 type PriorityFilter = "all" | TaskPriority;
-type Theme = "light" | "dark";
 
 function formatDate(value: string | null): string {
   if (!value) return "No due date";
@@ -95,18 +95,6 @@ function isTaskInPeriod(task: Task, period: SummaryPeriod, now = new Date()): bo
   return dueDate >= start && dueDate <= end;
 }
 
-function getMutationErrorMessage(error: unknown): string {
-  if (!error || typeof error !== "object") return "Something went wrong";
-  if ("data" in error && typeof (error as { data?: unknown }).data === "object") {
-    const data = (error as { data?: { message?: unknown } }).data;
-    if (typeof data?.message === "string") return data.message;
-  }
-  if ("error" in error && typeof (error as { error?: unknown }).error === "string") {
-    return (error as { error: string }).error;
-  }
-  return "Something went wrong";
-}
-
 export default function Dashboard() {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector((state) => state.auth.user);
@@ -121,7 +109,7 @@ export default function Dashboard() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [productivitySummary, setProductivitySummary] = useState<ProductivitySummaryResponse | null>(null);
-  const [taskSummary, setTaskSummary] = useState<TaskSummaryResponse | null>(null);
+  const [, setTaskSummary] = useState<TaskSummaryResponse | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -267,7 +255,7 @@ export default function Dashboard() {
           default:
             return (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()) * dir;
         }
-      } catch (e) {
+      } catch {
         return 0;
       }
     });
@@ -521,7 +509,7 @@ export default function Dashboard() {
                     <span>Sort</span>
                     <select aria-label="Sort tasks" value={`${sortBy}:${sortDir}`} onChange={(e) => {
                       const [s, d] = String(e.target.value).split(":");
-                      setSortBy(s as any);
+                      setSortBy(s as 'updatedAt' | 'createdAt' | 'dueDate' | 'priority' | 'title');
                       setSortDir(d as 'asc'|'desc');
                     }}>
                       <option value="updatedAt:desc">Recent</option>
@@ -535,7 +523,7 @@ export default function Dashboard() {
                 </div>
                 <span className="queue-count">{filteredTasks.length} {filteredTasks.length === 1 ? "task" : "tasks"}</span>
                 {selectedIds.size > 0 ? <div className="toolbar-actions">
-                  <button className="button button-danger" disabled={saving} onClick={async () => {
+                  <Button variant="danger" disabled={saving} onClick={async () => {
                     if (!sessionId) return;
                     if (selectedIds.size === 0) return;
                     if (!window.confirm(`Delete ${selectedIds.size} selected task(s)? This cannot be undone.`)) return;
@@ -551,12 +539,12 @@ export default function Dashboard() {
                     } finally {
                       setSaving(false);
                     }
-                  }}>Delete selected</button>
+                  }}>Delete selected</Button>
                 </div> : null}
               </div>
 
               <div className="task-list">
-                {loading ? <div className="empty-state"><span className="loading-dot" /> Loading your tasks...</div> : tasks.length === 0 ? <div className="empty-state"><div className="empty-icon"><CheckIcon /></div><strong>Your queue is clear</strong><span>Create your first task above to get started.</span></div> : filteredTasks.length === 0 ? <div className="empty-state"><strong>No matching tasks</strong><span>Try another filter to see more of your work.</span></div> : sortedTasks.map((task) => <TaskCard key={task.id} task={task} theme={theme} selected={selectedIds.has(task.id)} onToggle={(id) => {
+                {loading ? <div className="empty-state"><span className="loading-dot" /> Loading your tasks...</div> : tasks.length === 0 ? <div className="empty-state"><div className="empty-icon"><CheckIcon /></div><strong>Your queue is clear</strong><span>Create your first task above to get started.</span></div> : filteredTasks.length === 0 ? <div className="empty-state"><strong>No matching tasks</strong><span>Try another filter to see more of your work.</span></div> : sortedTasks.map((task) => <TaskCard key={task.id} task={task} selected={selectedIds.has(task.id)} onToggle={(id) => {
                   setSelectedIds((prev) => {
                     const next = new Set(prev);
                     if (next.has(id)) next.delete(id); else next.add(id);
@@ -666,7 +654,7 @@ function StatCard({ label, value, icon, tone }: { label: string; value: number; 
   );
 }
 
-function TaskCard({ task, theme, onEdit, onDelete, selected, onToggle }: { task: Task; theme: Theme; onEdit: (task: Task) => void; onDelete: (id: string) => void; selected: boolean; onToggle: (id: string) => void }) {
+function TaskCard({ task, onEdit, onDelete, selected, onToggle }: { task: Task; onEdit: (task: Task) => void; onDelete: (id: string) => void; selected: boolean; onToggle: (id: string) => void }) {
   return <article className={`task-row ${task.status === "done" ? "task-row-done" : ""}`}>
     <div className="task-select"><input type="checkbox" aria-label={`Select ${task.title}`} checked={!!selected} onChange={() => onToggle(task.id)} /></div>
     <div className={`task-check task-check-${task.status}`} aria-label={statusLabels[task.status]}>{task.status === "done" ? <CheckIcon /> : task.status === "in_progress" ? <span /> : null}</div>
@@ -698,7 +686,6 @@ const GridIcon = ({ size }: IconProps) => <Icon size={size}><rect x="4" y="4" wi
 const SparkIcon = ({ size }: IconProps) => <Icon size={size}><path d="m12 3-1.5 5.5L5 10l5.5 1.5L12 17l1.5-5.5L19 10l-5.5-1.5L12 3Z" /><path d="m19 16-.6 2.4L16 19l2.4.6L19 22l.6-2.4L22 19l-2.4-.6L19 16Z" /></Icon>;
 const CalendarIcon = ({ size }: IconProps) => <Icon size={size}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></Icon>;
 const SettingsIcon = ({ size }: IconProps) => <Icon size={size}><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" /><path d="m19.4 15 .1.1a2 2 0 0 1-2.8 2.8l-.1-.1a2 2 0 0 0-3.4 1.4v.3a2 2 0 0 1-4 0v-.2a2 2 0 0 0-3.4-1.5l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A2 2 0 0 0 3.6 12a2 2 0 0 0-1.4-3.4h-.3a2 2 0 0 1 0-4h.2A2 2 0 0 0 3.6 1.2l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A2 2 0 0 0 10 3.6a2 2 0 0 0 3.4-1.4v-.3a2 2 0 0 1 4 0v.2a2 2 0 0 0 3.4 1.5l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A2 2 0 0 0 20.4 10a2 2 0 0 0 1.4 3.4h.3a2 2 0 0 1 0 4h-.2a2 2 0 0 0-2.5-2.4Z" /></Icon>;
-const ChevronIcon = ({ size }: IconProps) => <Icon size={size}><path d="m9 18 6-6-6-6" /></Icon>;
 const ArrowIcon = ({ size }: IconProps) => <Icon size={size}><path d="M5 12h14M13 6l6 6-6 6" /></Icon>;
 const MoonIcon = ({ size }: IconProps) => <Icon size={size}><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z" /></Icon>;
 const SunIcon = ({ size }: IconProps) => <Icon size={size}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></Icon>;

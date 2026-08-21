@@ -167,10 +167,6 @@ body.dark .upgrade-card { border-color: #3f3978; }
 .task-select input[type="checkbox"] { width:16px; height:16px; accent-color: var(--brand); }
 
 /* Danger button variant consistent with design */
-.button-danger { background: #dc2626; color: white; border-color: transparent; }
-.button-danger:hover { background: #b91c1c; }
-.button-danger:disabled { background: #fca5a5; color: white; cursor: not-allowed; }
-
 .task-row { display: flex; align-items: flex-start; gap: 11px; min-width: 0; border-bottom: 1px solid var(--line); padding: 13px 3px; }
 .task-row:last-child { border-bottom: 0; }
 .task-check { display: grid; width: 19px; height: 19px; flex: 0 0 auto; place-items: center; margin-top: 2px; border: 1.5px solid var(--line-strong); border-radius: 50%; color: white; }
@@ -409,4 +405,3 @@ body.dark .priority-low { background: #1c354c; color: #83c2f4; }
 .spotlight-item:hover { background: var(--surface-subtle); border-color: var(--line-strong); }
 .spotlight-item.selected { background: color-mix(in srgb, var(--brand-soft) 12%, var(--surface)); border-color: color-mix(in srgb, var(--brand) 22%, var(--line)); box-shadow: 0 3px 10px rgba(0,0,0,0.04); }
 .spotlight-footer { margin-top: 10px; color: var(--muted); font-size: 12px; }
-
