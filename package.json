@@ -11,4 +11,3 @@
     "build:frontend": "npm run build --workspace frontend"
   }
 }
-

@@ -3,6 +3,12 @@
     @apply inline-flex items-center justify-center gap-2 rounded-control border border-transparent px-3.5 py-2 text-[13px] font-semibold transition-all duration-200;
   }
 
+  .button:focus-visible,
+  .icon-button:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--brand) 35%, transparent);
+    outline-offset: 2px;
+  }
+
   .button svg { width: 16px; }
 
   .icon-button {
@@ -14,6 +20,20 @@
   }
 
   .icon-button svg { width: 17px; }
+
+  .button-danger {
+    background: var(--danger);
+    color: white;
+  }
+
+  .button-danger:hover {
+    background: color-mix(in srgb, var(--danger) 82%, var(--ink));
+  }
+
+  .button-danger:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
 
   .panel {
     @apply min-w-0 rounded-panel border p-[22px] shadow-card;

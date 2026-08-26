@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Planned changes will be recorded here before the next release.
+
+## [1.2.3] - 2026-08-21
+
 ### Added
 
 - Floating Action Button (FAB) on the dashboard to open the Spotlight.
@@ -17,15 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Frontend version bumped: 1.2.1 → 1.2.2
-- Backend version bumped: 1.2.0 → 1.2.1
+- Frontend version bumped: 1.2.2 → 1.2.3.
 
 - **Dashboard UI**: compacted greeting card and card-grid spacing to reduce vertical whitespace and improve information density.
 - **Layout change**: greeting is left-aligned while the stats and "Today at a glance" are vertically stacked on the right column to improve visual balance.
 - **Stat cards**: refactored to a horizontal `Icon – label – count` layout for clearer, denser summaries.
 - **Greeting enhancements**: added contextual lines (`Next due`, `High priority`) inside the greeting panel (left-aligned) to provide more actionable information; removed the standalone suggestion placeholder.
 
-Planned changes will be recorded here before the next release.
+- Refactored shared frontend icons, error-message handling, and button variants to reduce duplication and keep UI behavior consistent.
+- Added frontend ESLint and Prettier scripts with flat ESLint configuration and shared formatting rules.
 
 ## [1.2.0] - 2026-08-06
 

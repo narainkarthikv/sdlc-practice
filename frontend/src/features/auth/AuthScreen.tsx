@@ -2,6 +2,18 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useAppDispatch } from "../../app/hooks";
 import { useTheme } from "../../theme/ThemeProvider";
 import { Button } from "../../components/ui/Button";
+import {
+  AlertIcon,
+  ArrowIcon,
+  CheckIcon,
+  EyeIcon,
+  EyeOffIcon,
+  MoonIcon,
+  ShieldIcon,
+  SparkIcon,
+  SunIcon
+} from "../../components/ui/Icon";
+import { getMutationErrorMessage } from "../../components/ui/errorMessage";
 import { setCredentials } from "./authSlice";
 import { useLoginMutation, useSignupMutation } from "./authApi";
 import type { LoginInput, SignupInput } from "../../types";
@@ -10,18 +22,6 @@ type Mode = "login" | "signup";
 
 const emptyLogin: LoginInput = { email: "", password: "" };
 const emptySignup: SignupInput = { displayName: "", email: "", password: "" };
-
-function getMutationErrorMessage(error: unknown) {
-  if (!error || typeof error !== "object") return "Something went wrong";
-  if ("data" in error && typeof (error as { data?: unknown }).data === "object") {
-    const data = (error as { data?: { message?: unknown } }).data;
-    if (typeof data?.message === "string") return data.message;
-  }
-  if ("error" in error && typeof (error as { error?: unknown }).error === "string") {
-    return (error as { error: string }).error;
-  }
-  return "Something went wrong";
-}
 
 export default function AuthScreen() {
   const dispatch = useAppDispatch();
@@ -84,14 +84,3 @@ export default function AuthScreen() {
     </main>
   );
 }
-
-function Icon({ children }: { children: React.ReactNode }) { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>; }
-const CheckIcon = () => <Icon><path d="m5 12 4 4L19 6" /></Icon>;
-const SparkIcon = () => <Icon><path d="m12 3-1.5 5.5L5 10l5.5 1.5L12 17l1.5-5.5L19 10l-5.5-1.5L12 3Z" /></Icon>;
-const ShieldIcon = () => <Icon><path d="M12 3 4.5 6v5c0 4.8 3.1 8.2 7.5 10 4.4-1.8 7.5-5.2 7.5-10V6L12 3Z" /><path d="m9 12 2 2 4-4" /></Icon>;
-const ArrowIcon = () => <Icon><path d="M5 12h14M13 6l6 6-6 6" /></Icon>;
-const AlertIcon = () => <Icon><path d="M12 4 3 20h18L12 4Z" /><path d="M12 10v4M12 17h.01" /></Icon>;
-const MoonIcon = () => <Icon><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z" /></Icon>;
-const SunIcon = () => <Icon><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></Icon>;
-const EyeIcon = () => <Icon><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3" /></Icon>;
-const EyeOffIcon = () => <Icon><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7 1.5-2.5 4.2-4.6 7.5-5.6" /><path d="M1 1l22 22" /></Icon>;
